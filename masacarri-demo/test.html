@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="device-width,initial-scale=1" />
+        <title>Masacarri Demo</title>
+    </head>
+    <body>
+        <p>This is Masacarri Test article.</p>
+        <div style="border: 1px solid transparent">
+            <iframe id="masacarri" src="http://127.0.0.1:3000/" style="border: none; width: 100%;"></iframe>
+            <script>
+                window.addEventListener('message', msg => {
+                    if(msg.data[0] == 'masacarri-height'){
+                        const frame = document.getElementById('masacarri');
+                        frame.style.height = `${msg.data[1]}px`;
+                    }
+                });
+            </script>
+        </div>
+    </body>
+</html>

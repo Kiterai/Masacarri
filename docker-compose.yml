@@ -1,0 +1,19 @@
+version: '3'
+services:
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    volumes:
+      - "./data/redis:/data"
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres/init:/docker-entrypoint-initdb.d
+      - ./data/postgres/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+      POSTGRES_DB: test_database
