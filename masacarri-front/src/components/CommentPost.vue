@@ -2,18 +2,10 @@
 import { computed } from '@vue/reactivity';
 import type { Dayjs } from "dayjs";
 import { marked } from 'marked';
-
-type CommentShowing = {
-    comment_id: string,
-    name: string,
-    site_url?: string,
-    date: Dayjs,
-    content: string,
-    children?: CommentShowing[],
-};
+import type { ShowingComment } from '@/CommentsStore';
 
 const props = defineProps<{
-    comment: CommentShowing,
+    comment: ShowingComment,
     hide_buttons?: boolean,
 }>();
 
@@ -54,9 +46,9 @@ function showContextsClicked() {
             <button class="btn" @click="showContextsClicked">文脈を読む</button>
         </div>
     </div>
-    <div v-if="props.comment.children" class="post-list">
-        <CommentPost v-for="child in props.comment.children" :key="child.comment_id" :comment="child"></CommentPost>
-    </div>
+    <!-- <div v-if="props.comment.children" class="post-list">
+        <CommentPost v-for="child in props.comment.children" :key="child" :comment="child"></CommentPost>
+    </div> -->
 
 </template>
 

@@ -26,7 +26,7 @@ export const useCommentsStore = defineStore({
     },
     getters: {
         getComment(state) {
-            return (id: string): ShowingComment | undefined => {
+            return (id: string): ShowingComment => {
                 const raw = state.comments.get(id);
                 if (raw) {
                     return {
@@ -35,6 +35,14 @@ export const useCommentsStore = defineStore({
                         site_url: raw.site_url,
                         date: dayjs(raw.created_time),
                         content: raw.content,
+                        children: [],
+                    };
+                } else {
+                    return {
+                        comment_id: id,
+                        name: "error",
+                        date: dayjs(),
+                        content: "error",
                         children: [],
                     };
                 }

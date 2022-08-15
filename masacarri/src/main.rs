@@ -48,8 +48,11 @@ async fn main() -> std::io::Result<()> {
     println!("Masacarri Server Starting...");
 
     let pool = establish_main_db();
+    println!("Connected to database");
+    
     let secret_key = Key::generate();
     let redis_store = establish_session_db().await;
+    println!("Connected to session db");
 
     let host_self = env::var("HOST").expect("HOST must be set");
     let port_self = env::var("PORT")
