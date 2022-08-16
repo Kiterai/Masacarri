@@ -2,11 +2,11 @@
 import type { Comment } from '@/models';
 import { ref } from 'vue';
 import { app_fetch } from '@/utils';
+import { useCommentsStore } from '@/CommentsStore';
+import { storeToRefs } from 'pinia';
 
-const props = defineProps<{
-  page_id: string
-  reply_to_id?: string 
-}>();
+const store = useCommentsStore();
+const { comment_replyto, page_id } = storeToRefs(store);
 
 const emit = defineEmits<{
   (e: 'commentSubmit', data: Comment): void
@@ -17,23 +17,27 @@ const comment_form = ref({
   site_url: "",
   mail_addr: "",
   content: "",
-  page_id: props.page_id,
 });
 const comment_form_info = ref<string | null>(null);
 
 function submit_comment() {
+  if(!page_id.value){
+    comment_form_info.value = "comment submit error";
+    return;
+  }
+
   comment_form_info.value = "in progress...";
 
   const sending = {
-    reply_to: props.reply_to_id,
+    reply_to: comment_replyto.value,
     display_name: comment_form.value.display_name,
     site_url: comment_form.value.site_url,
     mail_addr: comment_form.value.mail_addr,
     content: comment_form.value.content,
-    page_id: comment_form.value.page_id,
+    page_id: page_id.value,
   }
 
-  app_fetch(`/api/pages/${props.page_id}/comments`, "POST", sending)
+  app_fetch(`/api/pages/${page_id.value}/comments`, "POST", sending)
   .then((res: Comment) => {
     comment_form.value.content = "";
     emit("commentSubmit", res);
@@ -55,7 +59,7 @@ function submit_comment() {
       <dd><textarea rows="5" required v-model="comment_form.content"></textarea></dd>
       <dt title="コメント欄上で表示されることはありません">返信通知先</dt>
       <dd><input type="email" name="mail_addr" placeholder="info@example.com" v-model="comment_form.mail_addr" /></dd>
-      <button class="comment-submit" type="button" @click="submit_comment">送信</button>
+      <button class="comment-submit" type="button" @click="submit_comment">{{ comment_replyto ? "返信" : "送信" }}</button>
     </dl>
   </form>
 </template>

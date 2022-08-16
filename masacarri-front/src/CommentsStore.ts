@@ -18,10 +18,14 @@ export const useCommentsStore = defineStore({
     state: (): {
         comments: Map<string, Comment>,
         comment_showlist: string[],
+        comment_replyto: string | undefined,
+        page_id: string |  undefined,
     } => {
         return {
             comments: new Map(),
             comment_showlist: [],
+            comment_replyto: undefined,
+            page_id: undefined,
         }
     },
     getters: {
@@ -51,6 +55,7 @@ export const useCommentsStore = defineStore({
     },
     actions: {
         loadComment(page_id: string, index: number = 1, comment_per_page: number = 20) {
+            this.page_id = page_id;
             app_fetch(`/api/pages/${page_id}/comments?index=${index}&num=${comment_per_page}`)
                 .then((res: Comment[]) => {
                     this.comments.clear();

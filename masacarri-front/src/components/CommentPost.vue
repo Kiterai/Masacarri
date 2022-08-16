@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed } from '@vue/reactivity';
-import type { Dayjs } from "dayjs";
 import { marked } from 'marked';
-import type { ShowingComment } from '@/CommentsStore';
+import { useCommentsStore, type ShowingComment } from '@/CommentsStore';
+import { storeToRefs } from 'pinia';
+import CommentForm from './CommentForm.vue';
+
+const store = useCommentsStore();
+const { comment_replyto, getComment } = storeToRefs(store);
 
 const props = defineProps<{
     comment: ShowingComment,
@@ -11,6 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: 'beginReplyClicked', id: string): void,
+    (e: 'cancelReplyClicked', id: string): void,
     (e: 'showRepliesClicked', id: string): void,
     (e: 'showContextsClicked', id: string): void,
 }>();
@@ -20,7 +25,13 @@ const date_str = computed(() => {
 });
 
 function beginReplyClicked() {
+    comment_replyto.value = props.comment.comment_id;
     emit("beginReplyClicked", props.comment.comment_id);
+}
+
+function cancelReplyClicked() {
+    comment_replyto.value = undefined;
+    emit("cancelReplyClicked", props.comment.comment_id);
 }
 
 function showRepliesClicked() {
@@ -41,14 +52,16 @@ function showContextsClicked() {
         </div>
         <div class="post-content" v-html="marked.parse(props.comment.content)"></div>
         <div class="btns" v-if="!props.hide_buttons">
-            <button class="btn btn-reply" @click="beginReplyClicked">返信する</button>
+            <button class="btn btn-reply" v-if="comment_replyto == comment.comment_id" @click="cancelReplyClicked">キャンセル</button>
+            <button class="btn btn-reply" v-else @click="beginReplyClicked">返信する</button>
             <button class="btn" @click="showRepliesClicked">返信一覧</button>
             <button class="btn" @click="showContextsClicked">文脈を読む</button>
         </div>
+        <CommentForm v-if="comment_replyto == comment.comment_id"></CommentForm>
     </div>
-    <!-- <div v-if="props.comment.children" class="post-list">
-        <CommentPost v-for="child in props.comment.children" :key="child" :comment="child"></CommentPost>
-    </div> -->
+    <div v-if="props.comment.children" class="post-list">
+        <CommentPost v-for="child in props.comment.children" :key="child" :comment="getComment(child)"></CommentPost>
+    </div>
 
 </template>
 
