@@ -96,9 +96,17 @@ export const useCommentsStore = defineStore({
                 });
         },
         loadCommentReply(replyto: string, index: number = 1, comment_per_page: number = 7) {
-            const target_comment = this.comments.get(replyto);
-
-            if (target_comment) {
+            new Promise<Comment>((resolve) => {
+                const target_comment = this.comments.get(replyto);
+                if (target_comment) {
+                    resolve(target_comment);
+                } else {
+                    app_fetch(`/api/pages/${this.page_id}/comments/${replyto}`)
+                        .then((res: Comment) => {
+                            resolve(res);
+                        })
+                }
+            }).then((target_comment) => {
                 app_fetch(`/api/pages/${this.page_id}/comments?replyto=${replyto}&index=${index}&num=${comment_per_page}`)
                     .then((res: Comment[]) => {
                         this.comments.clear();
@@ -116,7 +124,7 @@ export const useCommentsStore = defineStore({
                         }
                         this.comment_showlist.push(root);
                     });
-            }
+            });
         },
         loadCommentContext(contextof: string, index: number = 1, comment_per_page: number = 7) {
             const target_comment = this.comments.get(contextof);
