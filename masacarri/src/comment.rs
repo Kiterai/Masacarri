@@ -55,16 +55,22 @@ pub struct NewComment {
 }
 
 #[derive(Deserialize)]
-pub struct GetCommentRequestPath {
+pub struct GetCommentsRequestPath {
     page: uuid::Uuid,
 }
 
 #[derive(Deserialize)]
-pub struct GetCommentRequestQuery {
+pub struct GetCommentsRequestQuery {
     num: Option<u32>,
     index: Option<u32>,
     replyto: Option<uuid::Uuid>,
     contextof: Option<uuid::Uuid>,
+}
+
+#[derive(Deserialize)]
+pub struct GetCommentRequestPath {
+    page: uuid::Uuid,
+    comment: uuid::Uuid,
 }
 
 #[derive(Queryable, Serialize)]
@@ -240,10 +246,10 @@ pub async fn add_comment(
     )))
 }
 
-pub async fn get_comment(
+pub async fn get_comments(
     db: web::Data<Pool>,
-    path_param: web::Path<GetCommentRequestPath>,
-    query_param: web::Query<GetCommentRequestQuery>,
+    path_param: web::Path<GetCommentsRequestPath>,
+    query_param: web::Query<GetCommentsRequestQuery>,
 ) -> AppResult<impl Responder> {
     let conn = db.get()?;
 
@@ -340,13 +346,43 @@ pub async fn get_comment(
     Ok(HttpResponse::Ok().json(showing_comments))
 }
 
+pub async fn get_comment(
+    db: web::Data<Pool>,
+    path_param: web::Path<GetCommentRequestPath>,
+) -> AppResult<impl Responder> {
+    let conn = db.get()?;
+
+    let result = sql_query(
+            r#"
+                select comments.*, count(child_comments.id) as count_replies
+                from comments
+                left join comments as child_comments
+                on comments.id = child_comments.reply_to
+                where comments.id = $1 and comments.page_id = $2
+                group by comments.id
+            "#,
+        )
+        .bind::<sql_types::Uuid, _>(path_param.comment)
+        .bind::<sql_types::Uuid, _>(path_param.page)
+        .load::<CommentWithReplies>(&conn)?;
+
+    let result = result.into_iter().next();
+
+    match result {
+        Some(comment) => Ok(HttpResponse::Ok().json(GetCommentResponse::from(comment))),
+        None => Ok(HttpResponse::NotFound().json(json!({
+            "message": "comment not found",
+        }))),
+    }
+}
+
 pub async fn mark_comment(_: Identity) -> AppResult<impl Responder> {
     Ok(HttpResponse::NoContent())
 }
 
 pub async fn get_comment_count(
     db: web::Data<Pool>,
-    path_param: web::Path<GetCommentRequestPath>,
+    path_param: web::Path<GetCommentsRequestPath>,
 ) -> AppResult<impl Responder> {
     let conn = db.get()?;
 

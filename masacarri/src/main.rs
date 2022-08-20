@@ -93,8 +93,9 @@ async fn main() -> std::io::Result<()> {
             .route("/api/pages", web::post().to(add_page))
             .route("/api/pages/{page}", web::patch().to(modify_page))
             .route("/api/pages/{page}", web::delete().to(delete_page))
-            .route("/api/pages/{page}/comments", web::get().to(get_comment))
+            .route("/api/pages/{page}/comments", web::get().to(get_comments))
             .route("/api/pages/{page}/comments", web::post().to(add_comment))
+            .route("/api/pages/{page}/comments/{comment}", web::get().to(get_comment))
             .route("/api/pages/{page}/comments/{comment}", web::patch().to(mark_comment))
             .route("/api/pages/{page}/comments_count", web::get().to(get_comment_count))
             .service(
