@@ -35,6 +35,7 @@ impl actix_web::error::ResponseError for AppError {
             "system error".to_string()
         };
 
+        eprintln!("{}", self);
         HttpResponse::build(self.status_code()).json(ErrorMessage { message: msg })
     }
 }

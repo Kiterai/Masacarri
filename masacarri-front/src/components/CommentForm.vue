@@ -5,8 +5,13 @@ import { app_fetch } from '@/utils';
 import { useCommentsStore } from '@/CommentsStore';
 import { storeToRefs } from 'pinia';
 
+
+const props = defineProps<{
+  comment_replyto?: string
+}>();
+
 const store = useCommentsStore();
-const { comment_replyto, page_id } = storeToRefs(store);
+const { page_id } = storeToRefs(store);
 
 const emit = defineEmits<{
   (e: 'commentSubmit', data: Comment): void
@@ -29,7 +34,7 @@ function submit_comment() {
   comment_form_info.value = "in progress...";
 
   const sending = {
-    reply_to: comment_replyto.value,
+    reply_to: props.comment_replyto,
     display_name: comment_form.value.display_name,
     site_url: comment_form.value.site_url,
     mail_addr: comment_form.value.mail_addr,
@@ -56,7 +61,7 @@ function submit_comment() {
       <dt>サイトURL</dt>
       <dd><input type="url" name="site_url" v-model="comment_form.site_url" /></dd>
       <dt class="required-label">コメント</dt>
-      <dd><textarea rows="5" required v-model="comment_form.content"></textarea></dd>
+      <dd><textarea rows="3" required v-model="comment_form.content"></textarea></dd>
       <dt title="コメント欄上で表示されることはありません">返信通知先</dt>
       <dd><input type="email" name="mail_addr" placeholder="info@example.com" v-model="comment_form.mail_addr" /></dd>
       <button class="comment-submit" type="button" @click="submit_comment">{{ comment_replyto ? "返信" : "送信" }}</button>
@@ -66,7 +71,6 @@ function submit_comment() {
 
 <style scoped>
 dl {
-  max-width: 40em;
   display: flex;
   flex-wrap: wrap;
 }

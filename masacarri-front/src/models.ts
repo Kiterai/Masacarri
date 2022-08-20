@@ -5,6 +5,7 @@ export type Comment = {
     display_name: string,
     site_url?: string,
     content: string,
+    count_replies: number,
     created_time: string,
 };
 

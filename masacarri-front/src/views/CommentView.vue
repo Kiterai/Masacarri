@@ -3,6 +3,9 @@ import CommentForm from "@/components/CommentForm.vue";
 import CommentPost from "@/components/CommentPost.vue";
 import { useCommentsStore } from '@/CommentsStore';
 import { storeToRefs } from 'pinia';
+import { computed } from "@vue/reactivity";
+
+const store = useCommentsStore();
 
 const props = defineProps<{
   page_id: string
@@ -13,40 +16,87 @@ const props = defineProps<{
 //   comment_replyto.value = null;
 // }
 
-// function on_begin_reply_clicked(id: string) {
-//   const comment = comments.value.find(comment => comment.id == id);
-//   if (comment) {
-//     comment_replyto.value = comment;
-//   }
-// }
+function on_begin_reply_clicked(id: string) {
+  store.comment_replyto = id;
+}
 
-// function show_replies(id: string) {
-//   app_fetch(`/api/pages/${props.page_id}/comments?replyto=${id}`)
-//     .then((res: Comment[]) => {
-//       console.log(res);
-//       // comments.value = res;
-//     });
-// }
+function on_cancel_reply_clicked(id: string) {
+  store.comment_replyto = undefined;
+}
 
-const store = useCommentsStore();
+function show_replies(id: string) {
+  store.loadCommentReply(id);
+}
+function show_contexts(id: string) {
+  store.loadCommentContext(id);
+}
 
-store.loadComment(props.page_id)
+store.loadPage(props.page_id);
 
-const { comment_replyto, comment_showlist, getComment } = storeToRefs(store);
+const commentsPerPage = 7;
+
+const linkCommentPageIndices = computed(() => {
+  const indices: Set<number> = new Set();
+  const lastIndex = ((store.comments_count + commentsPerPage - 1) / commentsPerPage) | 0;
+
+  indices.add(1);
+  indices.add((store.comment_page_index + 1) / 2 | 0);
+  indices.add(store.comment_page_index - 1);
+  indices.add(store.comment_page_index);
+  indices.add(store.comment_page_index + 1);
+  indices.add((store.comment_page_index + lastIndex + 1) / 2 | 0);
+  indices.add(lastIndex);
+
+  return Array.from(indices).filter((n) => { return 1 <= n && n <= lastIndex; })
+});
+
+const { comment_showlist } = storeToRefs(store);
 
 </script>
 
 <template>
-  <CommentForm v-if="!comment_replyto"></CommentForm>
-
+  <CommentForm></CommentForm>
+  <nav class="pagination_nav">
+    <button v-for="index in linkCommentPageIndices" @click="store.comment_page_index = index; store.loadComment(index)"
+      class="comment_page_btn" :data-isactive="store.comment_page_index == index">{{ index }}</button>
+  </nav>
   <div class="post-list">
-    <CommentPost v-for="comment_id in comment_showlist" :key="comment_id" :comment="getComment(comment_id)">
+    <CommentPost v-for="comment in comment_showlist" :key="comment.comment_id" :comment="comment"
+      @begin-reply-clicked="on_begin_reply_clicked" @cancel-reply-clicked="on_cancel_reply_clicked"
+      @show-replies-clicked="show_replies" @show-contexts-clicked="show_contexts">
     </CommentPost>
   </div>
+  <nav class="pagination_nav">
+    <button v-for="index in linkCommentPageIndices" @click="store.comment_page_index = index; store.loadComment(index)"
+      class="comment_page_btn" :data-isactive="store.comment_page_index == index">{{ index }}</button>
+  </nav>
 
   <p>Powered by Masacarri</p>
 
 </template>
 
 <style scoped>
+.comment_page_btn {
+  border: 1px solid #ddd;
+  color: rgb(13, 139, 97);
+  width: 2em;
+  height: 2em;
+  margin: 0.5em;
+  font-size: 1rem;
+  transition: background-color 0.1s;
+}
+
+.comment_page_btn:hover {
+  background-color: #ccc;
+}
+
+.comment_page_btn[data-isactive=true] {
+  background-color: rgb(86, 153, 131);
+  color: #fff;
+}
+
+.pagination_nav {
+  display: flex;
+  justify-content: center
+}
 </style>

@@ -1,15 +1,15 @@
-use std::collections::HashMap;
-
 use crate::db::Pool;
 use crate::error::{AppError, AppResult};
-use crate::models::Comment;
+use crate::models::{Comment, CommentWithReplies};
 use crate::schema::comments;
 use crate::schema::comments::dsl::*;
 use crate::utils::empty_to_none;
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use chrono::{DateTime, Utc};
-use diesel::prelude::*;
+use diesel::pg::types::sql_types;
+use diesel::sql_types::BigInt;
+use diesel::{prelude::*, sql_query};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use static_assertions::const_assert;
@@ -75,7 +75,43 @@ pub struct GetCommentResponse {
     display_name: String,
     site_url: Option<String>,
     content: String,
+    count_replies: Option<i64>,
     created_time: DateTime<Utc>,
+}
+
+impl From<CommentWithReplies> for GetCommentResponse {
+    fn from(comment: CommentWithReplies) -> Self {
+        let CommentWithReplies {
+            id: r_id,
+            page_id: r_page_id,
+            reply_to: r_reply_to,
+            display_name: r_display_name,
+            site_url: r_site_url,
+            content: r_content,
+            ip_addr: _,
+            mail_addr: _,
+            delete_key: _,
+            flags: r_flags,
+            count_replies: r_count_replies,
+            created_time: r_created_time,
+        } = comment;
+
+        let is_spam = (r_flags & MARK_AS_SPAM_FRAG_BIT) == MARK_AS_SPAM_FRAG_BIT;
+
+        GetCommentResponse {
+            id: r_id,
+            page_id: r_page_id,
+            reply_to: r_reply_to,
+            display_name: r_display_name,
+            site_url: r_site_url,
+            content: match is_spam {
+                true => "(This comment is marked as spam.)".to_string(),
+                _ => r_content,
+            },
+            count_replies: Some(r_count_replies),
+            created_time: r_created_time,
+        }
+    }
 }
 
 impl From<Comment> for GetCommentResponse {
@@ -106,6 +142,7 @@ impl From<Comment> for GetCommentResponse {
                 true => "(This comment is marked as spam.)".to_string(),
                 _ => r_content,
             },
+            count_replies: None,
             created_time: r_created_time,
         }
     }
@@ -203,35 +240,6 @@ pub async fn add_comment(
     )))
 }
 
-fn pick_comment_context(
-    target_comment_id: uuid::Uuid,
-    raw_comments: Vec<Comment>,
-    comments_page_index: u32,
-    comments_per_page: u32,
-) -> AppResult<Vec<Comment>> {
-    let mut map: HashMap<_, _> = raw_comments
-        .into_iter()
-        .map(move |comment| (comment.id, comment))
-        .collect();
-
-    let mut comment_context = Vec::new();
-    let mut next_comment_id = Some(target_comment_id);
-
-    while let Some(parent_id) = next_comment_id {
-        let now_comment = map.remove(&parent_id).ok_or(AppError::UnspecifiedErr)?;
-        next_comment_id = now_comment.reply_to;
-        comment_context.push(now_comment);
-    }
-
-    comment_context.reverse();
-
-    Ok(comment_context
-        .into_iter()
-        .skip(((comments_page_index - 1) * comments_per_page).try_into()?)
-        .take(comments_per_page.try_into()?)
-        .collect())
-}
-
 pub async fn get_comment(
     db: web::Data<Pool>,
     path_param: web::Path<GetCommentRequestPath>,
@@ -240,7 +248,13 @@ pub async fn get_comment(
     let conn = db.get()?;
 
     let comments_per_page = query_param.num.unwrap_or(DEFAULT_COMMENTS_PER_PAGE);
-    let comments_page_index = query_param.index.unwrap_or(DEFAULT_PAGE_INDEX) - 1;
+    let comments_page_index = query_param.index.unwrap_or(DEFAULT_PAGE_INDEX);
+
+    if comments_page_index < 1 {
+        return Err(AppError::PublishableErr("invalid page index".to_string()));
+    }
+
+    let comments_page_index = comments_page_index - 1;
 
     if 0 >= comments_per_page || comments_per_page > MAX_COMMENTS_PER_PAGE {
         return Err(AppError::PublishableErr(format!(
@@ -255,27 +269,67 @@ pub async fn get_comment(
                 "'replyto' and 'contextof' are not allowed to use simultaneously.",
             )));
         }
-        (Some(reply_to_id), None) => comments
-            .filter(reply_to.eq(reply_to_id))
-            .order(created_time.desc())
-            .limit(comments_per_page.into())
-            .offset((comments_per_page * comments_page_index).into())
-            .load::<Comment>(&conn)?,
-        (None, Some(target_comment_id)) => pick_comment_context(
-            target_comment_id,
-            comments
-                .filter(page_id.eq(path_param.page))
-                .order(created_time.desc())
-                .load::<Comment>(&conn)?,
-            comments_page_index,
-            comments_per_page,
-        )?,
-        (None, None) => comments
-            .filter(page_id.eq(path_param.page))
-            .order(created_time.desc())
-            .limit(comments_per_page.into())
-            .offset((comments_per_page * comments_page_index).into())
-            .load::<Comment>(&conn)?,
+        (Some(reply_to_id), None) => sql_query(
+            r#"
+                select comments.*, count(child_comments.id) as count_replies
+                from comments
+                left join comments as child_comments 
+                on comments.id = child_comments.reply_to
+                where comments.reply_to = $1
+                group by comments.id
+                order by created_time
+                offset $2
+                limit $3;
+            "#,
+        )
+        .bind::<sql_types::Uuid, _>(reply_to_id)
+        .bind::<BigInt, i64>((comments_per_page * comments_page_index).into())
+        .bind::<BigInt, i64>((comments_per_page).into())
+        .load::<CommentWithReplies>(&conn)?,
+        (None, Some(target_comment_id)) => sql_query(
+            r#"
+            with recursive tree as (
+                select comments.*
+                from comments
+                where comments.id = $1
+                union all
+                    select comments.*
+                    from tree, comments
+                    where tree.reply_to = comments.id
+            )
+            select * from (
+                select distinct on (tree.id) tree.*, count(comments.id) over (partition by tree.id) as count_replies
+                from tree
+                left join comments
+                on tree.id = comments.reply_to
+                order by tree.id
+            ) as context
+            order by created_time
+            offset $2
+            limit $3;
+            "#,
+        )
+        .bind::<sql_types::Uuid, _>(target_comment_id)
+        .bind::<BigInt, i64>((comments_per_page * comments_page_index).into())
+        .bind::<BigInt, i64>((comments_per_page).into())
+        .load::<CommentWithReplies>(&conn)?,
+        (None, None) => sql_query(
+            r#"
+                select comments.*, count(child_comments.id) as count_replies
+                from comments
+                left join comments as child_comments
+                on comments.id = child_comments.reply_to
+                where comments.page_id = $1
+                group by comments.id
+                order by created_time
+                offset $2
+                limit $3;
+            "#,
+        )
+        .bind::<sql_types::Uuid, _>(path_param.page)
+        .bind::<BigInt, i64>((comments_per_page * comments_page_index).into())
+        .bind::<BigInt, i64>((comments_per_page).into())
+        .load::<CommentWithReplies>(&conn)?,
     };
 
     let showing_comments: Vec<_> = result
