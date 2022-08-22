@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import type { Comment } from "./models";
+import type { Comment, NewCommentRequest } from "./models";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { app_fetch } from "./utils";
@@ -58,13 +58,19 @@ export const useCommentsStore = defineStore({
     getters: {
     },
     actions: {
+        commentCountReload(page_id?: string) {
+            if (!page_id)
+                page_id = this.page_id;
+            return app_fetch(`/api/pages/${page_id}/comments_count`).then((res) => {
+                this.comments_count = res.count;
+            });
+        },
         loadPage(page_id: string, index: number | null = null, comment_per_page: number = 7) {
             const page_load =
                 this.page_id != page_id
-                    ? app_fetch(`/api/pages/${page_id}/comments_count`)
+                    ? this.commentCountReload(page_id)
                         .then((res) => {
                             this.page_id = page_id;
-                            this.comments_count = res.count;
                             if (!index) {
                                 index = latestPageIndex(this.comments_count, comment_per_page);
                             }
@@ -74,15 +80,12 @@ export const useCommentsStore = defineStore({
                     : Promise.resolve();
 
             page_load.then(() => {
-                if (!index) {
-                    index = latestPageIndex(this.comments_count, comment_per_page);
-                }
                 this.loadComment(index, comment_per_page);
-                this.comment_page_index = index;
             });
         },
-        loadComment(index: number = 1, comment_per_page: number = 7) {
-            app_fetch(`/api/pages/${this.page_id}/comments?index=${index}&num=${comment_per_page}`)
+        loadComment(index: number | null = null, comment_per_page: number = 7) {
+            const realIndex = index ? index : latestPageIndex(this.comments_count, comment_per_page);
+            app_fetch(`/api/pages/${this.page_id}/comments?index=${realIndex}&num=${comment_per_page}`)
                 .then((res: Comment[]) => {
                     this.comments.clear();
                     this.comment_showlist.length = 0;
@@ -93,6 +96,7 @@ export const useCommentsStore = defineStore({
                     for (const comment of res) {
                         this.comment_showlist.push(toShowComment(comment));
                     }
+                    this.comment_page_index = realIndex;
                 });
         },
         loadCommentReply(replyto: string, index: number = 1, comment_per_page: number = 7) {
@@ -149,6 +153,21 @@ export const useCommentsStore = defineStore({
                         this.comment_showlist.push(root);
                     });
             }
+        },
+        submitComment(comment: NewCommentRequest) {
+            return app_fetch(`/api/pages/${this.page_id}/comments`, "POST", comment)
+                .then((res: Comment) => {
+                    this.commentCountReload()
+                        .then(() => {
+                            this.comments.set(res.id, res);
+                            if (comment.reply_to) {
+                                this.loadCommentReply(comment.reply_to);
+                            } else {
+                                this.loadComment();
+                            }
+                        });
+                    return res;
+                })
         }
     },
 });

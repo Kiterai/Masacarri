@@ -4,6 +4,7 @@ import CommentPost from "@/components/CommentPost.vue";
 import { useCommentsStore } from '@/CommentsStore';
 import { storeToRefs } from 'pinia';
 import { computed } from "@vue/reactivity";
+import type { Comment } from "@/models";
 
 const store = useCommentsStore();
 
@@ -11,10 +12,12 @@ const props = defineProps<{
   page_id: string
 }>();
 
-// function on_comment_submit(data: Comment) {
-//   comments.value.unshift(data);
-//   comment_replyto.value = null;
-// }
+
+function on_comment_submit(data: Comment) {
+  if (data.reply_to) {
+    store.comment_replyto = undefined;
+  }
+}
 
 function on_begin_reply_clicked(id: string) {
   store.comment_replyto = id;

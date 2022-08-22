@@ -15,3 +15,12 @@ export type Page = {
     page_url: string,
     published: boolean,
 };
+
+export type NewCommentRequest = {
+    reply_to?: string,
+    display_name: string,
+    site_url?: string,
+    mail_addr?: string,
+    content: string,
+    delete_key?: string,
+}

@@ -26,31 +26,24 @@ const comment_form = ref({
 const comment_form_info = ref<string | null>(null);
 
 function submit_comment() {
-  if(!page_id.value){
+  if (!page_id.value) {
     comment_form_info.value = "comment submit error";
     return;
   }
 
   comment_form_info.value = "in progress...";
 
-  const sending = {
+  const res = store.submitComment({
     reply_to: props.comment_replyto,
     display_name: comment_form.value.display_name,
     site_url: comment_form.value.site_url,
     mail_addr: comment_form.value.mail_addr,
     content: comment_form.value.content,
-    page_id: page_id.value,
-  }
-
-  app_fetch(`/api/pages/${page_id.value}/comments`, "POST", sending)
-  .then((res: Comment) => {
+  }).then((res) => {
     comment_form.value.content = "";
     emit("commentSubmit", res);
-  }).catch(err => {
-    comment_form_info.value = "error";
   });
 }
-
 </script>
 
 <template>
@@ -115,8 +108,8 @@ dd {
   border-radius: 0.3rem;
   padding: 0.25rem;
 }
+
 .comment-submit:hover {
   background-color: rgb(11, 104, 73);
 }
-
 </style>
