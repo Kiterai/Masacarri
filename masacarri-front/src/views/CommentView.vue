@@ -55,27 +55,35 @@ const { comment_showlist } = storeToRefs(store);
 </script>
 
 <template>
-  <CommentForm></CommentForm>
-  <nav class="pagination_nav">
-    <button v-for="index in linkCommentPageIndices" @click="store.comment_page_index = index; store.loadComment(index)"
-      class="comment_page_btn" :data-isactive="store.comment_page_index == index">{{ index }}</button>
-  </nav>
-  <div class="post-list">
-    <CommentPost v-for="comment in comment_showlist" :key="comment.comment_id" :comment="comment"
-      @begin-reply-clicked="on_begin_reply_clicked" @cancel-reply-clicked="on_cancel_reply_clicked"
-      @show-replies-clicked="show_replies" @show-contexts-clicked="show_contexts">
-    </CommentPost>
-  </div>
-  <nav class="pagination_nav">
-    <button v-for="index in linkCommentPageIndices" @click="store.comment_page_index = index; store.loadComment(index)"
-      class="comment_page_btn" :data-isactive="store.comment_page_index == index">{{ index }}</button>
-  </nav>
+  <div class="comment-view">
+    <CommentForm></CommentForm>
+    <nav class="pagination_nav">
+      <button v-for="index in linkCommentPageIndices"
+        @click="store.comment_page_index = index; store.loadComment(index)" class="comment_page_btn"
+        :data-isactive="store.comment_page_index == index">{{ index }}</button>
+    </nav>
+    <div class="post-list">
+      <CommentPost v-for="comment in comment_showlist" :key="comment.comment_id" :comment="comment"
+        @begin-reply-clicked="on_begin_reply_clicked" @cancel-reply-clicked="on_cancel_reply_clicked"
+        @show-replies-clicked="show_replies" @show-contexts-clicked="show_contexts">
+      </CommentPost>
+    </div>
+    <nav class="pagination_nav">
+      <button v-for="index in linkCommentPageIndices"
+        @click="store.comment_page_index = index; store.loadComment(index)" class="comment_page_btn"
+        :data-isactive="store.comment_page_index == index">{{ index }}</button>
+    </nav>
 
-  <p>Powered by Masacarri</p>
+    <p>Powered by Masacarri</p>
+  </div>
 
 </template>
 
 <style scoped>
+.comment-view {
+  max-width: 36rem;
+}
+
 .comment_page_btn {
   border: 1px solid #ddd;
   color: rgb(13, 139, 97);
