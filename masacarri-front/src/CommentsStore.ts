@@ -61,9 +61,10 @@ export const useCommentsStore = defineStore({
         commentCountReload(page_id?: string) {
             if (!page_id)
                 page_id = this.page_id;
-            return app_fetch(`/api/pages/${page_id}/comments_count`).then((res) => {
-                this.comments_count = res.count;
-            });
+            return app_fetch(`/api/pages/${page_id}/comments_count`)
+                .then((res) => {
+                    this.comments_count = res.count;
+                });
         },
         loadPage(page_id: string, index: number | null = null, comment_per_page: number = 7) {
             const page_load =
@@ -79,9 +80,10 @@ export const useCommentsStore = defineStore({
                         })
                     : Promise.resolve();
 
-            page_load.then(() => {
-                this.loadComment(index, comment_per_page);
-            });
+            page_load
+                .then(() => {
+                    this.loadComment(index, comment_per_page);
+                });
         },
         loadComment(index: number | null = null, comment_per_page: number = 7) {
             const realIndex = index ? index : latestPageIndex(this.comments_count, comment_per_page);

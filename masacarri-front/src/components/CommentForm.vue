@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Comment } from '@/models';
 import { ref } from 'vue';
-import { app_fetch } from '@/utils';
 import { useCommentsStore } from '@/CommentsStore';
 import { storeToRefs } from 'pinia';
 
