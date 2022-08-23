@@ -5,6 +5,14 @@ use diesel::sql_types::*;
 
 use crate::schema::comments;
 
+#[derive(Queryable)]
+pub struct User {
+    pub id: uuid::Uuid,
+    pub username: String,
+    pub password_hash: String,
+    pub flags: i32,
+}
+
 #[derive(Queryable, Serialize)]
 pub struct Page {
     pub id: uuid::Uuid,
