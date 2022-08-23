@@ -47,7 +47,7 @@ async fn main() -> std::io::Result<()> {
 
     println!("Masacarri Server Starting...");
 
-    let pool = establish_main_db();
+    let pool = establish_main_db_pool();
     println!("Connected to database");
     
     let secret_key = Key::generate();
