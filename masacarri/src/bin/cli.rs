@@ -115,6 +115,7 @@ fn update_password(conn: MainDbConnection, username: &str) {
     println!("input password: ");
     let mut passwd = String::new();
     stdin().read_line(&mut passwd).expect("failed to get input");
+    passwd.pop();
     let passwd = passwd;
 
     println!("retype password: ");
@@ -122,6 +123,7 @@ fn update_password(conn: MainDbConnection, username: &str) {
     stdin()
         .read_line(&mut retyped_passwd)
         .expect("failed to get input");
+    retyped_passwd.pop();
     let retyped_passwd = retyped_passwd;
 
     if passwd != retyped_passwd {
@@ -131,7 +133,9 @@ fn update_password(conn: MainDbConnection, username: &str) {
 
     let hash = bcrypt::hash(passwd, 8);
 
-    let hash = if let Ok(hash) = hash { hash } else {
+    let hash = if let Ok(hash) = hash {
+        hash
+    } else {
         eprintln!("failed to update password");
         return;
     };
@@ -143,7 +147,7 @@ fn update_password(conn: MainDbConnection, username: &str) {
     match res {
         Ok(_) => {
             println!("password is successfully updated");
-        },
+        }
         Err(_) => {
             eprintln!("failed to update password");
         }
