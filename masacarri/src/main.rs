@@ -1,4 +1,5 @@
 use std::env;
+use std::time::Duration;
 
 use actix_cors::Cors;
 use actix_files::NamedFile;
@@ -60,8 +61,6 @@ async fn login(
         return Err(AppError::AuthErr(LOGIN_ERR_MSG.to_string()));
     };
 
-    println!("{}", user_password_hash);
-
     if let Ok(true) = bcrypt::verify(password, &user_password_hash) {
         Identity::login(&request.extensions(), user.into()).unwrap();
         Ok(HttpResponse::Ok().json(json! {
@@ -122,13 +121,16 @@ async fn main() -> std::io::Result<()> {
             Cors::default()
         };
 
+        let identity_middleware = IdentityMiddleware::builder()
+            .login_deadline(Some(Duration::new(3600 * 3, 0)))
+            .build();
+
+        let session_middleware = SessionMiddleware::new(redis_store.clone(), secret_key.clone());
+
         App::new()
             .app_data(web::Data::new(pool.clone()))
-            .wrap(IdentityMiddleware::default())
-            .wrap(SessionMiddleware::new(
-                redis_store.clone(),
-                secret_key.clone(),
-            ))
+            .wrap(identity_middleware)
+            .wrap(session_middleware)
             .wrap(cors)
             .route("/api/login", web::post().to(login))
             .route("/api/logout", web::get().to(logout))
