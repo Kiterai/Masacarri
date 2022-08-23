@@ -12,6 +12,7 @@ pub enum AppError {
     UnspecifiedErr,
     StdErr(Box<dyn std::error::Error>),
     PublishableErr(String),
+    AuthErr(String),
 }
 
 impl Display for AppError {
@@ -20,19 +21,23 @@ impl Display for AppError {
             AppError::UnspecifiedErr => write!(f, "unspecified error"),
             AppError::StdErr(e) => e.fmt(f),
             AppError::PublishableErr(s) => write!(f, "{}", s),
+            AppError::AuthErr(s) => write!(f, "{}", s),
         }
     }
 }
 
 impl actix_web::error::ResponseError for AppError {
     fn status_code(&self) -> StatusCode {
-        StatusCode::INTERNAL_SERVER_ERROR
+        match self {
+            AppError::AuthErr(_) => StatusCode::UNAUTHORIZED,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
     }
     fn error_response(&self) -> HttpResponse {
-        let msg = if let AppError::PublishableErr(s) = self {
-            s.clone()
-        } else {
-            "system error".to_string()
+        let msg = match self {
+            AppError::PublishableErr(s) => s.clone(),
+            AppError::AuthErr(s) => s.clone(),
+            _ => "system error".to_string(),
         };
 
         eprintln!("{}", self);

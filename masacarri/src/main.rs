@@ -5,16 +5,25 @@ use actix_files::NamedFile;
 use actix_identity::{Identity, IdentityMiddleware};
 use actix_session::SessionMiddleware;
 use actix_web::dev::{fn_service, ServiceRequest, ServiceResponse};
-use actix_web::{cookie::Key, web, App, HttpMessage, HttpRequest, HttpResponse, HttpServer, Responder, http};
+use actix_web::{
+    cookie::Key, http, web, App, HttpMessage, HttpRequest, HttpResponse, HttpServer, Responder,
+};
+use diesel::ExpressionMethods;
+use diesel::QueryDsl;
+use diesel::RunQueryDsl;
+
 use dotenv::dotenv;
+use error::{AppError, AppResult};
+use schema::users;
+use serde::Deserialize;
 use serde_json::json;
 
 #[macro_use]
 extern crate diesel;
 
-mod error;
 mod comment;
 mod db;
+mod error;
 mod models;
 mod page;
 mod schema;
@@ -23,13 +32,46 @@ use crate::comment::*;
 use crate::db::*;
 use crate::page::*;
 
-async fn login(request: HttpRequest) -> impl Responder {
-    Identity::login(&request.extensions(), "User1".into()).unwrap();
-    HttpResponse::Ok().json(json! {
-        {
-            "message": "successfully logged in"
-        }
-    })
+#[derive(Deserialize)]
+struct LoginRequest {
+    user: String,
+    password: String,
+}
+
+async fn login(
+    request: HttpRequest,
+    db: web::Data<Pool>,
+    login_data: web::Json<LoginRequest>,
+) -> AppResult<impl Responder> {
+    let conn = db.get()?;
+
+    let LoginRequest { user, password } = login_data.0;
+
+    const LOGIN_ERR_MSG: &str = "login failed";
+
+    let user_password_hash = users::dsl::users
+        .filter(users::dsl::username.eq(user.as_str()))
+        .select((users::dsl::password_hash,))
+        .first::<(String,)>(&conn);
+
+    let user_password_hash = if let Ok(h) = user_password_hash {
+        h.0
+    } else {
+        return Err(AppError::AuthErr(LOGIN_ERR_MSG.to_string()));
+    };
+
+    println!("{}", user_password_hash);
+
+    if let Ok(true) = bcrypt::verify(password, &user_password_hash) {
+        Identity::login(&request.extensions(), user.into()).unwrap();
+        Ok(HttpResponse::Ok().json(json! {
+            {
+                "message": "successfully logged in"
+            }
+        }))
+    } else {
+        return Err(AppError::AuthErr(LOGIN_ERR_MSG.to_string()));
+    }
 }
 
 async fn logout(user: Identity) -> impl Responder {
@@ -49,7 +91,7 @@ async fn main() -> std::io::Result<()> {
 
     let pool = establish_main_db_pool();
     println!("Connected to database");
-    
+
     let secret_key = Key::generate();
     let redis_store = establish_session_db().await;
     println!("Connected to session db");
@@ -64,7 +106,8 @@ async fn main() -> std::io::Result<()> {
         let mode = env::var("MODE").unwrap_or("production".to_string());
 
         let cors = if mode == "development" {
-            let front_origin = env::var("FRONT_ORIGIN").unwrap_or("http://127.0.0.1:5173".to_string());
+            let front_origin =
+                env::var("FRONT_ORIGIN").unwrap_or("http://127.0.0.1:5173".to_string());
 
             Cors::default()
                 .allowed_origin(front_origin.as_str())
@@ -95,9 +138,18 @@ async fn main() -> std::io::Result<()> {
             .route("/api/pages/{page}", web::delete().to(delete_page))
             .route("/api/pages/{page}/comments", web::get().to(get_comments))
             .route("/api/pages/{page}/comments", web::post().to(add_comment))
-            .route("/api/pages/{page}/comments/{comment}", web::get().to(get_comment))
-            .route("/api/pages/{page}/comments/{comment}", web::patch().to(mark_comment))
-            .route("/api/pages/{page}/comments_count", web::get().to(get_comment_count))
+            .route(
+                "/api/pages/{page}/comments/{comment}",
+                web::get().to(get_comment),
+            )
+            .route(
+                "/api/pages/{page}/comments/{comment}",
+                web::patch().to(mark_comment),
+            )
+            .route(
+                "/api/pages/{page}/comments_count",
+                web::get().to(get_comment_count),
+            )
             .service(
                 actix_files::Files::new("/", "../masacarri-front/dist")
                     .index_file("index.html")
