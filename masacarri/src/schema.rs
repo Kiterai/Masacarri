@@ -23,9 +23,19 @@ table! {
     }
 }
 
+table! {
+    users (id) {
+        id -> Uuid,
+        username -> Varchar,
+        password_hash -> Varchar,
+        flags -> Int4,
+    }
+}
+
 joinable!(comments -> pages (page_id));
 
 allow_tables_to_appear_in_same_query!(
     comments,
     pages,
+    users,
 );
