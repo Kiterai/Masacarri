@@ -52,6 +52,28 @@ const linkCommentPageIndices = computed(() => {
 
   return Array.from(indices).filter((n) => { return 1 <= n && n <= lastIndex; })
 });
+const subLinkCommentPageIndices = computed(() => {
+  if (!store.sub_pagination) {
+    return [];
+  }
+
+  const count = store.sub_pagination.item_count;
+  const item_per_page = store.sub_pagination.item_per_page;
+  const page_index = store.sub_pagination.index;
+
+  const indices: Set<number> = new Set();
+  const lastIndex = ((count + item_per_page - 1) / item_per_page) | 0;
+
+  indices.add(1);
+  indices.add((page_index + 1) / 2 | 0);
+  indices.add(page_index - 1);
+  indices.add(page_index);
+  indices.add(page_index + 1);
+  indices.add((page_index + lastIndex + 1) / 2 | 0);
+  indices.add(lastIndex);
+
+  return Array.from(indices).filter((n) => { return 1 <= n && n <= lastIndex; })
+});
 
 const { comment_showlist } = storeToRefs(store);
 
@@ -66,12 +88,20 @@ const { comment_showlist } = storeToRefs(store);
         @click="store.comment_page_index = index; store.loadComment(index)" class="comment_page_btn"
         :data-isactive="store.comment_page_index == index">{{ index }}</button>
     </nav>
+    <nav v-if="store.sub_pagination" class="pagination_nav sub_pagination_nav">
+      <button v-for="index in subLinkCommentPageIndices" class="comment_page_btn"
+        :data-isactive="store.sub_pagination.index == index">{{ index }}</button>
+    </nav>
     <div class="post-list">
       <CommentPost v-for="comment in comment_showlist" :key="comment.comment_id" :comment="comment"
         @begin-reply-clicked="on_begin_reply_clicked" @cancel-reply-clicked="on_cancel_reply_clicked"
         @show-replies-clicked="show_replies" @show-contexts-clicked="show_contexts">
       </CommentPost>
     </div>
+    <nav v-if="store.sub_pagination" class="pagination_nav sub_pagination_nav">
+      <button v-for="index in subLinkCommentPageIndices" class="comment_page_btn"
+        :data-isactive="store.sub_pagination.index == index">{{ index }}</button>
+    </nav>
     <nav class="pagination_nav">
       <button v-for="index in linkCommentPageIndices"
         @click="store.comment_page_index = index; store.loadComment(index)" class="comment_page_btn"
@@ -110,5 +140,8 @@ const { comment_showlist } = storeToRefs(store);
 .pagination_nav {
   display: flex;
   justify-content: center
+}
+.sub_pagination_nav .comment_page_btn {
+  font-size: 0.8rem;
 }
 </style>

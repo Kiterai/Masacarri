@@ -15,6 +15,12 @@ export type ShowingComment = {
     children?: ShowingComment[],
 };
 
+type PeginationContext = {
+    item_count: number,
+    item_per_page: number,
+    index: number,
+}
+
 function toShowComment(raw: Comment): ShowingComment {
     return {
         comment_id: raw.id,
@@ -36,6 +42,8 @@ export const useCommentsStore = defineStore({
     id: "showing_comments",
     state: (): {
         comments: Map<string, Comment>,
+        main_pagination: PeginationContext,
+        sub_pagination: PeginationContext | null,
         comments_count: number,
         comment_page_index: number,
         comment_showlist: ShowingComment[],
@@ -47,6 +55,12 @@ export const useCommentsStore = defineStore({
     } => {
         return {
             comments: new Map(),
+            main_pagination: {
+                item_count: 0,
+                index: 1,
+                item_per_page: 7,
+            },
+            sub_pagination: null,
             comments_count: 0,
             comment_page_index: 1,
             comment_showlist: [],
@@ -105,6 +119,9 @@ export const useCommentsStore = defineStore({
                         this.comment_showlist.push(toShowComment(comment));
                     }
                     this.comment_page_index = realIndex;
+                    if (this.sub_pagination) {
+                        this.sub_pagination = null;
+                    }
 
                     return res;
                 });
@@ -120,27 +137,43 @@ export const useCommentsStore = defineStore({
                             resolve(res);
                         })
                 }
-            }).then((target_comment) => {
-                return app_fetch(`/api/pages/${this.page_id}/comments?replyto=${replyto}&index=${index}&num=${comment_per_page}`)
-                    .then((res: Comment[]) => {
-                        this.comments.clear();
-                        this.comment_showlist.length = 0;
+            })
+                .then((target_comment) => {
+                    return app_fetch(`/api/pages/${this.page_id}/comments_count?replyto=${replyto}`)
+                        .then((res) => {
+                            if (this.sub_pagination) {
+                                this.sub_pagination.item_count = res.count;
+                            } else {
+                                this.sub_pagination = {
+                                    index: 1,
+                                    item_count: res.count,
+                                    item_per_page: 7,
+                                }
+                            }
+                            return target_comment;
+                        });
+                })
+                .then((target_comment) => {
+                    return app_fetch(`/api/pages/${this.page_id}/comments?replyto=${replyto}&index=${index}&num=${comment_per_page}`)
+                        .then((res: Comment[]) => {
+                            this.comments.clear();
+                            this.comment_showlist.length = 0;
 
-                        this.comments.set(target_comment.id, target_comment);
-                        for (const comment of res) {
-                            this.comments.set(comment.id, comment);
-                        }
+                            this.comments.set(target_comment.id, target_comment);
+                            for (const comment of res) {
+                                this.comments.set(comment.id, comment);
+                            }
 
-                        const root = toShowComment(target_comment);
-                        root.children = [];
-                        for (const comment of res) {
-                            root.children.push(toShowComment(comment));
-                        }
-                        this.comment_showlist.push(root);
+                            const root = toShowComment(target_comment);
+                            root.children = [];
+                            for (const comment of res) {
+                                root.children.push(toShowComment(comment));
+                            }
+                            this.comment_showlist.push(root);
 
-                        return res;
-                    });
-            });
+                            return res;
+                        });
+                });
         },
         loadCommentContext(contextof: string, index: number = 1, comment_per_page: number = 7) {
             return new Promise<Comment>((resolve) => {
@@ -153,28 +186,44 @@ export const useCommentsStore = defineStore({
                             resolve(res);
                         })
                 }
-            }).then((target_comment) => {
-                return app_fetch(`/api/pages/${this.page_id}/comments?contextof=${contextof}&index=${index}&num=${comment_per_page}`)
-                    .then((res: Comment[]) => {
-                        this.comments.clear();
-                        this.comment_showlist.length = 0;
+            })
+                .then((target_comment) => {
+                    return app_fetch(`/api/pages/${this.page_id}/comments_count?contextof=${contextof}`)
+                        .then((res) => {
+                            if (this.sub_pagination) {
+                                this.sub_pagination.item_count = res.count;
+                            } else {
+                                this.sub_pagination = {
+                                    index: 1,
+                                    item_count: res.count,
+                                    item_per_page: 7,
+                                }
+                            }
+                            return target_comment;
+                        });
+                })
+                .then((target_comment) => {
+                    return app_fetch(`/api/pages/${this.page_id}/comments?contextof=${contextof}&index=${index}&num=${comment_per_page}`)
+                        .then((res: Comment[]) => {
+                            this.comments.clear();
+                            this.comment_showlist.length = 0;
 
-                        this.comments.set(target_comment.id, target_comment);
-                        for (const comment of res) {
-                            this.comments.set(comment.id, comment);
-                        }
+                            this.comments.set(target_comment.id, target_comment);
+                            for (const comment of res) {
+                                this.comments.set(comment.id, comment);
+                            }
 
-                        const root = toShowComment(res[0]);
-                        root.children = [];
+                            const root = toShowComment(res[0]);
+                            root.children = [];
 
-                        for (const comment of res.slice(1)) {
-                            root.children.push(toShowComment(comment));
-                        }
-                        this.comment_showlist.push(root);
+                            for (const comment of res.slice(1)) {
+                                root.children.push(toShowComment(comment));
+                            }
+                            this.comment_showlist.push(root);
 
-                        return res;
-                    });
-            });
+                            return res;
+                        });
+                });
         },
         submitComment(comment: NewCommentRequest) {
             return app_fetch(`/api/pages/${this.page_id}/comments`, "POST", comment)
