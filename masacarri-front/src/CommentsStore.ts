@@ -77,9 +77,6 @@ export const useCommentsStore = defineStore({
 
             page_load
                 .then(() => {
-                    if (!index) {
-                        index = latestPageIndex(this.comments_count, comment_per_page);
-                    }
                     this.loadComment(index, comment_per_page);
                 });
         },
