@@ -72,16 +72,14 @@ export const useCommentsStore = defineStore({
                     ? this.commentCountReload(page_id)
                         .then((res) => {
                             this.page_id = page_id;
-                            if (!index) {
-                                index = latestPageIndex(this.comments_count, comment_per_page);
-                            }
-                            this.loadComment(index, comment_per_page);
-                            this.comment_page_index = index;
                         })
                     : Promise.resolve();
 
             page_load
                 .then(() => {
+                    if (!index) {
+                        index = latestPageIndex(this.comments_count, comment_per_page);
+                    }
                     this.loadComment(index, comment_per_page);
                 });
         },
