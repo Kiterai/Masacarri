@@ -43,6 +43,7 @@ export const useCommentsStore = defineStore({
         comment_shows_reply: string | undefined,
         comment_shows_context: string | undefined,
         page_id: string | undefined,
+        page_loading: boolean,
     } => {
         return {
             comments: new Map(),
@@ -53,6 +54,7 @@ export const useCommentsStore = defineStore({
             comment_shows_reply: undefined,
             comment_shows_context: undefined,
             page_id: undefined,
+            page_loading: true,
         }
     },
     getters: {
@@ -69,7 +71,13 @@ export const useCommentsStore = defineStore({
         loadPage(page_id: string, index: number | null = null, comment_per_page: number = 7) {
             const page_load =
                 this.page_id != page_id
-                    ? this.commentCountReload(page_id)
+                    ? new Promise((resolve) => {
+                        this.page_loading = true;
+                        resolve(null);
+                    })
+                        .then(() => {
+                            return this.commentCountReload(page_id);
+                        })
                         .then((res) => {
                             this.page_id = page_id;
                         })
@@ -77,7 +85,10 @@ export const useCommentsStore = defineStore({
 
             return page_load
                 .then(() => {
-                    this.loadComment(index, comment_per_page);
+                    return this.loadComment(index, comment_per_page);
+                })
+                .then(() => {
+                    this.page_loading = false;
                 });
         },
         loadComment(index: number | null = null, comment_per_page: number = 7) {

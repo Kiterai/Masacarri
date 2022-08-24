@@ -58,7 +58,8 @@ const { comment_showlist } = storeToRefs(store);
 </script>
 
 <template>
-  <div class="comment-view">
+  <div v-if="store.page_loading">loading...</div>
+  <div class="comment-view" v-else>
     <CommentForm></CommentForm>
     <nav class="pagination_nav">
       <button v-for="index in linkCommentPageIndices"
