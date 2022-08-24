@@ -1,6 +1,6 @@
 use crate::db::Pool;
 use crate::error::{AppError, AppResult};
-use crate::models::{Comment, CommentWithReplies};
+use crate::models::{Comment, CommentWithReplies, CountResult};
 use crate::schema::comments;
 use crate::schema::comments::dsl::*;
 use crate::utils::empty_to_none;
@@ -274,7 +274,7 @@ pub async fn get_comments(
             return Err(AppError::PublishableErr(format!(
                 "'replyto' and 'contextof' are not allowed to use simultaneously.",
             )));
-        }
+        },
         (Some(reply_to_id), None) => sql_query(
             r#"
                 select comments.*, count(child_comments.id) as count_replies
@@ -353,7 +353,7 @@ pub async fn get_comment(
     let conn = db.get()?;
 
     let result = sql_query(
-            r#"
+        r#"
                 select comments.*, count(child_comments.id) as count_replies
                 from comments
                 left join comments as child_comments
@@ -361,10 +361,10 @@ pub async fn get_comment(
                 where comments.id = $1 and comments.page_id = $2
                 group by comments.id
             "#,
-        )
-        .bind::<sql_types::Uuid, _>(path_param.comment)
-        .bind::<sql_types::Uuid, _>(path_param.page)
-        .load::<CommentWithReplies>(&conn)?;
+    )
+    .bind::<sql_types::Uuid, _>(path_param.comment)
+    .bind::<sql_types::Uuid, _>(path_param.page)
+    .load::<CommentWithReplies>(&conn)?;
 
     let result = result.into_iter().next();
 
@@ -383,13 +383,41 @@ pub async fn mark_comment(_: Identity) -> AppResult<impl Responder> {
 pub async fn get_comment_count(
     db: web::Data<Pool>,
     path_param: web::Path<GetCommentsRequestPath>,
+    query_param: web::Query<GetCommentsRequestQuery>,
 ) -> AppResult<impl Responder> {
     let conn = db.get()?;
 
-    let result: i64 = comments
-        .filter(page_id.eq(path_param.page))
-        .count()
-        .get_result(&conn)?;
+    let result: i64 = match (query_param.replyto, query_param.contextof) {
+        (None, None) => comments
+            .filter(page_id.eq(path_param.page))
+            .count()
+            .get_result(&conn)?,
+        (None, Some(contextof_id)) => sql_query(
+            r#"
+            with recursive tree as (
+                select comments.reply_to
+                from comments
+                where comments.id = $1
+                union all
+                    select comments.reply_to
+                    from tree, comments
+                    where tree.reply_to = comments.id
+            )
+            select count(*) from tree
+            "#,
+        )
+        .bind::<sql_types::Uuid, _>(contextof_id)
+        .get_result::<CountResult>(&conn)?.count,
+        (Some(reply_to_id), None) => comments
+            .filter(reply_to.eq(reply_to_id))
+            .count()
+            .get_result(&conn)?,
+        (Some(_), Some(_)) => {
+            return Err(AppError::PublishableErr(format!(
+                "'replyto' and 'contextof' are not allowed to use simultaneously.",
+            )));
+        }
+    };
 
     Ok(HttpResponse::Ok().json(json!({
         "count": result,

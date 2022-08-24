@@ -54,3 +54,9 @@ pub struct CommentWithReplies {
     #[sql_type = "BigInt"]
     pub count_replies: i64,
 }
+
+#[derive(Queryable, QueryableByName)]
+pub struct CountResult {
+    #[sql_type = "BigInt"]
+    pub count: i64,
+}
