@@ -75,14 +75,14 @@ export const useCommentsStore = defineStore({
                         })
                     : Promise.resolve();
 
-            page_load
+            return page_load
                 .then(() => {
                     this.loadComment(index, comment_per_page);
                 });
         },
         loadComment(index: number | null = null, comment_per_page: number = 7) {
             const realIndex = index ? index : latestPageIndex(this.comments_count, comment_per_page);
-            app_fetch(`/api/pages/${this.page_id}/comments?index=${realIndex}&num=${comment_per_page}`)
+            return app_fetch(`/api/pages/${this.page_id}/comments?index=${realIndex}&num=${comment_per_page}`)
                 .then((res: Comment[]) => {
                     this.comments.clear();
                     this.comment_showlist.length = 0;
@@ -94,10 +94,12 @@ export const useCommentsStore = defineStore({
                         this.comment_showlist.push(toShowComment(comment));
                     }
                     this.comment_page_index = realIndex;
+
+                    return res;
                 });
         },
         loadCommentReply(replyto: string, index: number = 1, comment_per_page: number = 7) {
-            new Promise<Comment>((resolve) => {
+            return new Promise<Comment>((resolve) => {
                 const target_comment = this.comments.get(replyto);
                 if (target_comment) {
                     resolve(target_comment);
@@ -108,7 +110,7 @@ export const useCommentsStore = defineStore({
                         })
                 }
             }).then((target_comment) => {
-                app_fetch(`/api/pages/${this.page_id}/comments?replyto=${replyto}&index=${index}&num=${comment_per_page}`)
+                return app_fetch(`/api/pages/${this.page_id}/comments?replyto=${replyto}&index=${index}&num=${comment_per_page}`)
                     .then((res: Comment[]) => {
                         this.comments.clear();
                         this.comment_showlist.length = 0;
@@ -124,14 +126,24 @@ export const useCommentsStore = defineStore({
                             root.children.push(toShowComment(comment));
                         }
                         this.comment_showlist.push(root);
+
+                        return res;
                     });
             });
         },
         loadCommentContext(contextof: string, index: number = 1, comment_per_page: number = 7) {
-            const target_comment = this.comments.get(contextof);
-
-            if (target_comment) {
-                app_fetch(`/api/pages/${this.page_id}/comments?contextof=${contextof}&index=${index}&num=${comment_per_page}`)
+            return new Promise<Comment>((resolve) => {
+                const target_comment = this.comments.get(contextof);
+                if (target_comment) {
+                    resolve(target_comment);
+                } else {
+                    app_fetch(`/api/pages/${this.page_id}/comments/${contextof}`)
+                        .then((res: Comment) => {
+                            resolve(res);
+                        })
+                }
+            }).then((target_comment) => {
+                return app_fetch(`/api/pages/${this.page_id}/comments?contextof=${contextof}&index=${index}&num=${comment_per_page}`)
                     .then((res: Comment[]) => {
                         this.comments.clear();
                         this.comment_showlist.length = 0;
@@ -148,13 +160,15 @@ export const useCommentsStore = defineStore({
                             root.children.push(toShowComment(comment));
                         }
                         this.comment_showlist.push(root);
+
+                        return res;
                     });
-            }
+            });
         },
         submitComment(comment: NewCommentRequest) {
             return app_fetch(`/api/pages/${this.page_id}/comments`, "POST", comment)
                 .then((res: Comment) => {
-                    this.commentCountReload()
+                    return this.commentCountReload()
                         .then(() => {
                             this.comments.set(res.id, res);
                             if (comment.reply_to) {
@@ -162,8 +176,8 @@ export const useCommentsStore = defineStore({
                             } else {
                                 this.loadComment();
                             }
+                            return res;
                         });
-                    return res;
                 })
         }
     },
