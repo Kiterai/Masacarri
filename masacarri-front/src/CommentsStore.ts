@@ -142,18 +142,14 @@ export const useCommentsStore = defineStore({
                     return app_fetch(`/api/pages/${this.page_id}/comments_count?replyto=${replyto}`)
                         .then((res) => {
                             const tmp = this.comments.get(target_comment.id);
-                            if(tmp){
+                            if (tmp) {
                                 tmp.count_replies = res.count;
                                 this.comments.set(target_comment.id, tmp);
                             }
-                            if (this.sub_pagination) {
-                                this.sub_pagination.item_count = res.count;
-                            } else {
-                                this.sub_pagination = {
-                                    index: 1,
-                                    item_count: res.count,
-                                    item_per_page: 7,
-                                }
+                            this.sub_pagination = {
+                                index: index,
+                                item_count: res.count,
+                                item_per_page: 7,
                             }
                             return target_comment;
                         });
@@ -176,6 +172,9 @@ export const useCommentsStore = defineStore({
                             }
                             this.comment_showlist.push(root);
 
+                            this.comment_shows_context = undefined;
+                            this.comment_shows_reply = target_comment.id;
+
                             return res;
                         });
                 });
@@ -195,14 +194,10 @@ export const useCommentsStore = defineStore({
                 .then((target_comment) => {
                     return app_fetch(`/api/pages/${this.page_id}/comments_count?contextof=${contextof}`)
                         .then((res) => {
-                            if (this.sub_pagination) {
-                                this.sub_pagination.item_count = res.count;
-                            } else {
-                                this.sub_pagination = {
-                                    index: 1,
-                                    item_count: res.count,
-                                    item_per_page: 7,
-                                }
+                            this.sub_pagination = {
+                                index: index,
+                                item_count: res.count,
+                                item_per_page: 7,
                             }
                             return target_comment;
                         });
@@ -225,6 +220,9 @@ export const useCommentsStore = defineStore({
                                 root.children.push(toShowComment(comment));
                             }
                             this.comment_showlist.push(root);
+
+                            this.comment_shows_reply = undefined;
+                            this.comment_shows_context = target_comment.id;
 
                             return res;
                         });

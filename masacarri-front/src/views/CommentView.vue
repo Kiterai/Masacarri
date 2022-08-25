@@ -84,12 +84,12 @@ const { comment_showlist } = storeToRefs(store);
   <div class="comment-view" v-else>
     <CommentForm></CommentForm>
     <nav class="pagination_nav">
-      <button v-for="index in linkCommentPageIndices"
-        @click="store.comment_page_index = index; store.loadComment(index)" class="comment_page_btn"
+      <button v-for="index in linkCommentPageIndices" @click="store.loadComment(index)" class="comment_page_btn"
         :data-isactive="store.comment_page_index == index">{{ index }}</button>
     </nav>
     <nav v-if="store.sub_pagination" class="pagination_nav sub_pagination_nav">
       <button v-for="index in subLinkCommentPageIndices" class="comment_page_btn"
+        @click="if (store.comment_shows_reply) { store.loadCommentReply(store.comment_shows_reply, index); } if (store.comment_shows_context) { store.loadCommentContext(store.comment_shows_context, index); }"
         :data-isactive="store.sub_pagination.index == index">{{ index }}</button>
     </nav>
     <div class="post-list">
@@ -103,8 +103,7 @@ const { comment_showlist } = storeToRefs(store);
         :data-isactive="store.sub_pagination.index == index">{{ index }}</button>
     </nav>
     <nav class="pagination_nav">
-      <button v-for="index in linkCommentPageIndices"
-        @click="store.comment_page_index = index; store.loadComment(index)" class="comment_page_btn"
+      <button v-for="index in linkCommentPageIndices" @click="store.loadComment(index)" class="comment_page_btn"
         :data-isactive="store.comment_page_index == index">{{ index }}</button>
     </nav>
 
@@ -141,6 +140,7 @@ const { comment_showlist } = storeToRefs(store);
   display: flex;
   justify-content: center
 }
+
 .sub_pagination_nav .comment_page_btn {
   font-size: 0.8rem;
 }
