@@ -141,6 +141,11 @@ export const useCommentsStore = defineStore({
                 .then((target_comment) => {
                     return app_fetch(`/api/pages/${this.page_id}/comments_count?replyto=${replyto}`)
                         .then((res) => {
+                            const tmp = this.comments.get(target_comment.id);
+                            if(tmp){
+                                tmp.count_replies = res.count;
+                                this.comments.set(target_comment.id, tmp);
+                            }
                             if (this.sub_pagination) {
                                 this.sub_pagination.item_count = res.count;
                             } else {
