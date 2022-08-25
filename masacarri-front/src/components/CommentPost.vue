@@ -71,7 +71,9 @@ function toReplyto() {
             <button class="btn btn-reply" v-if="comment_replyto == comment.comment_id"
                 @click="cancelReplyClicked">返信をキャンセル</button>
             <button class="btn btn-reply" v-else @click="beginReplyClicked">返信する</button>
+            <span v-if="comment.count_replies > 0" class="btn-separator"> | </span>
             <button class="btn" @click="showRepliesClicked" v-if="comment.count_replies > 0">{{ comment.count_replies }}件の返信</button>
+            <span v-if="props.comment.parent" class="btn-separator"> | </span>
             <button v-if="props.comment.parent" class="btn" @click="showContextsClicked">文脈を読む</button>
         </div>
         <CommentForm v-if="comment_replyto == comment.comment_id" :comment_replyto="comment.comment_id"></CommentForm>
@@ -123,10 +125,22 @@ function toReplyto() {
     padding: 0.5em;
 }
 
-.btn {
+.btns {
     margin-left: 0.5em;
-    text-decoration: underline;
+}
+
+.btn {
+    /* margin-left: 0.5em; */
+    text-decoration: none;
     color: rgb(13, 139, 97);
+}
+
+.btn:hover {
+    text-decoration: underline;
+}
+
+.btn-separator {
+    color: rgba(0, 0, 0, 0.25);
 }
 
 .post-list {
