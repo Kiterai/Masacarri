@@ -35,7 +35,8 @@ function toShowComment(raw: Comment): ShowingComment {
 }
 
 function latestPageIndex(comments_count: number, comments_per_page: number) {
-    return ((comments_count + comments_per_page - 1) / comments_per_page) | 0;
+    const index = ((comments_count + comments_per_page - 1) / comments_per_page) | 0;
+    return Math.max(1, index);
 }
 
 export const useCommentsStore = defineStore({
