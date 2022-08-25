@@ -75,6 +75,15 @@ const subLinkCommentPageIndices = computed(() => {
   return Array.from(indices).filter((n) => { return 1 <= n && n <= lastIndex; })
 });
 
+function sub_pagination_jump(index: number) {
+  if (store.comment_shows_reply) {
+    store.loadCommentReply(store.comment_shows_reply, index);
+  }
+  if (store.comment_shows_context) {
+    store.loadCommentContext(store.comment_shows_context, index);
+  }
+}
+
 const { comment_showlist } = storeToRefs(store);
 
 </script>
@@ -88,8 +97,7 @@ const { comment_showlist } = storeToRefs(store);
         :data-isactive="store.comment_page_index == index">{{ index }}</button>
     </nav>
     <nav v-if="store.sub_pagination" class="pagination_nav sub_pagination_nav">
-      <button v-for="index in subLinkCommentPageIndices" class="comment_page_btn"
-        @click="if (store.comment_shows_reply) { store.loadCommentReply(store.comment_shows_reply, index); } if (store.comment_shows_context) { store.loadCommentContext(store.comment_shows_context, index); }"
+      <button v-for="index in subLinkCommentPageIndices" class="comment_page_btn" @click="sub_pagination_jump(index)"
         :data-isactive="store.sub_pagination.index == index">{{ index }}</button>
     </nav>
     <div class="post-list">
@@ -99,7 +107,7 @@ const { comment_showlist } = storeToRefs(store);
       </CommentPost>
     </div>
     <nav v-if="store.sub_pagination" class="pagination_nav sub_pagination_nav">
-      <button v-for="index in subLinkCommentPageIndices" class="comment_page_btn"
+      <button v-for="index in subLinkCommentPageIndices" class="comment_page_btn" @click="sub_pagination_jump(index)"
         :data-isactive="store.sub_pagination.index == index">{{ index }}</button>
     </nav>
     <nav class="pagination_nav">

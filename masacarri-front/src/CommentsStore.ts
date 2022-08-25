@@ -127,7 +127,7 @@ export const useCommentsStore = defineStore({
                     return res;
                 });
         },
-        loadCommentReply(replyto: string, index: number = 1, comment_per_page: number = 7) {
+        loadCommentReply(replyto: string, index: number = 1, comment_per_page: number = 6) {
             return new Promise<Comment>((resolve) => {
                 const target_comment = this.comments.get(replyto);
                 if (target_comment) {
@@ -150,7 +150,7 @@ export const useCommentsStore = defineStore({
                             this.sub_pagination = {
                                 index: index,
                                 item_count: res.count,
-                                item_per_page: 7,
+                                item_per_page: comment_per_page,
                             }
                             return target_comment;
                         });
@@ -198,7 +198,7 @@ export const useCommentsStore = defineStore({
                             this.sub_pagination = {
                                 index: index,
                                 item_count: res.count,
-                                item_per_page: 7,
+                                item_per_page: comment_per_page,
                             }
                             return target_comment;
                         });
