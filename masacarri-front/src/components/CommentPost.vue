@@ -53,14 +53,14 @@ function childShowContextsClicked(id: string) {
 }
 
 function toReplyto() {
-    if(props.comment.parent)
+    if (props.comment.parent)
         store.loadCommentReply(props.comment.parent);
 }
 
 </script>
 
 <template>
-    <div class="post">
+    <div class="post" :data-current-focus="store.comment_shows_reply == props.comment.comment_id || store.comment_shows_context == props.comment.comment_id">
         <div class="post-meta">
             <a v-if="props.comment.parent" class="post-isreply" @click="toReplyto">返信:</a>
             <a class="post-name">{{ props.comment.name }}</a>
@@ -72,7 +72,8 @@ function toReplyto() {
                 @click="cancelReplyClicked">返信をキャンセル</button>
             <button class="btn btn-reply" v-else @click="beginReplyClicked">返信する</button>
             <span v-if="comment.count_replies > 0" class="btn-separator"> | </span>
-            <button class="btn" @click="showRepliesClicked" v-if="comment.count_replies > 0">{{ comment.count_replies }}件の返信</button>
+            <button class="btn" @click="showRepliesClicked" v-if="comment.count_replies > 0">{{ comment.count_replies
+            }}件の返信</button>
             <span v-if="props.comment.parent" class="btn-separator"> | </span>
             <button v-if="props.comment.parent" class="btn" @click="showContextsClicked">文脈を読む</button>
         </div>
@@ -81,7 +82,8 @@ function toReplyto() {
     <div v-if="props.comment.children" class="post-list">
         <CommentPost v-for="child in props.comment.children" :key="child.comment_id" :comment="child"
             @begin-reply-clicked="childBeginReplyClicked" @cancel-reply-clicked="childCancelReplyClicked"
-            @show-replies-clicked="childShowRepliesClicked" @show-contexts-clicked="childShowContextsClicked"></CommentPost>
+            @show-replies-clicked="childShowRepliesClicked" @show-contexts-clicked="childShowContextsClicked">
+        </CommentPost>
     </div>
 
 </template>
@@ -97,6 +99,11 @@ function toReplyto() {
 .post:hover {
     border-left: 0.2rem rgb(180, 180, 201) solid;
     background-color: rgba(0, 0, 0, 0.05);
+}
+
+.post[data-current-focus=true] {
+    border-left: 0.2rem #ffe9b7 solid;
+    background-color: #ffdd8f54;
 }
 
 .post-name {

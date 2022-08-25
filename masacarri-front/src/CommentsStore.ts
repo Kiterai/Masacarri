@@ -123,6 +123,8 @@ export const useCommentsStore = defineStore({
                     if (this.sub_pagination) {
                         this.sub_pagination = null;
                     }
+                    this.comment_shows_context = undefined;
+                    this.comment_shows_reply = undefined;
 
                     return res;
                 });
