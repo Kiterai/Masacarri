@@ -231,11 +231,16 @@ export const useCommentsStore = defineStore({
                     return this.commentCountReload()
                         .then(() => {
                             this.comments.set(res.id, res);
-                            if (comment.reply_to) {
-                                this.loadCommentReply(comment.reply_to);
-                            } else {
-                                this.loadComment();
+                            if (res.reply_to) {
+                                this.comment_replyto = undefined;
                             }
+                            if (comment.reply_to) {
+                                return this.loadCommentReply(comment.reply_to);
+                            } else {
+                                return this.loadComment();
+                            }
+                        })
+                        .then(() => {
                             return res;
                         });
                 })
