@@ -28,6 +28,7 @@ mod error;
 mod models;
 mod page;
 mod schema;
+mod mail;
 mod utils;
 use crate::comment::*;
 use crate::db::*;

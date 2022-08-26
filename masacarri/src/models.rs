@@ -21,7 +21,7 @@ pub struct Page {
     pub published: bool,
 }
 
-#[derive(Queryable)]
+#[derive(Queryable, Clone)]
 pub struct Comment {
     pub id: uuid::Uuid,
     pub page_id: uuid::Uuid,

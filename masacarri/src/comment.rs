@@ -1,5 +1,6 @@
 use crate::db::Pool;
 use crate::error::{AppError, AppResult};
+use crate::mail::notify_reply;
 use crate::models::{Comment, CommentWithReplies, CountResult};
 use crate::schema::comments;
 use crate::schema::comments::dsl::*;
@@ -241,9 +242,42 @@ pub async fn add_comment(
         return Err(AppError::UnspecifiedErr);
     }
 
-    Ok(HttpResponse::Created().json(GetCommentResponse::from(
-        result.pop().ok_or(AppError::UnspecifiedErr)?,
-    )))
+    let comment_new = result.pop().ok_or(AppError::UnspecifiedErr)?;
+    if let Some(id_replyto) = comment_new.reply_to {
+        let comment_new = comment_new.clone();
+
+        actix_web::rt::spawn(async move {
+            const NOTIFY_RETRY_NUMBER: i32 = 5;
+            
+            let page = crate::schema::pages::dsl::pages.filter(crate::schema::pages::id.eq(comment_new.page_id)).first::<crate::models::Page>(&conn);
+            let page = match page {
+                Ok(x) => x,
+                Err(_) => return,
+            };
+
+            for _ in 0..NOTIFY_RETRY_NUMBER {
+                let comment_replyto = comments.filter(id.eq(id_replyto)).first::<Comment>(&conn);
+
+                let comment_replyto = match comment_replyto {
+                    Ok(x) => x,
+                    Err(_) => continue,
+                };
+
+                let res = notify_reply(&page, &comment_replyto, &comment_new).await;
+                match res {
+                    Ok(_) => (),
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        continue;
+                    },
+                };
+
+                return;
+            }
+        });
+    }
+
+    Ok(HttpResponse::Created().json(GetCommentResponse::from(comment_new)))
 }
 
 pub async fn get_comments(
@@ -392,8 +426,9 @@ pub async fn get_comment_count(
             .filter(page_id.eq(path_param.page))
             .count()
             .get_result(&conn)?,
-        (None, Some(contextof_id)) => sql_query(
-            r#"
+        (None, Some(contextof_id)) => {
+            sql_query(
+                r#"
             with recursive tree as (
                 select comments.reply_to
                 from comments
@@ -405,9 +440,11 @@ pub async fn get_comment_count(
             )
             select count(*) from tree
             "#,
-        )
-        .bind::<sql_types::Uuid, _>(contextof_id)
-        .get_result::<CountResult>(&conn)?.count,
+            )
+            .bind::<sql_types::Uuid, _>(contextof_id)
+            .get_result::<CountResult>(&conn)?
+            .count
+        }
         (Some(reply_to_id), None) => comments
             .filter(reply_to.eq(reply_to_id))
             .count()
