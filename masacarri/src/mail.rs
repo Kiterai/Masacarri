@@ -6,14 +6,14 @@ use lettre::{
 };
 
 use crate::{
-    error::{AppError, AppResult},
+    error::AppResult,
     models::{Comment, Page},
 };
 
 pub async fn notify_reply(
     page: &Page,
     comment_replyto: &Comment,
-    comment_reply: &Comment,
+    _comment_reply: &Comment,
 ) -> AppResult<()> {
     let replyto_addr = match &comment_replyto.mail_addr {
         Some(x) => x,
