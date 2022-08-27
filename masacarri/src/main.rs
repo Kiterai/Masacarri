@@ -6,7 +6,7 @@ use actix_files::NamedFile;
 use actix_identity::{Identity, IdentityMiddleware};
 use actix_session::SessionMiddleware;
 use actix_web::dev::{fn_service, ServiceRequest, ServiceResponse};
-use actix_web::middleware::Logger;
+use actix_web::middleware::{Condition, Logger};
 use actix_web::{
     cookie::Key, http, web, App, HttpMessage, HttpRequest, HttpResponse, HttpServer, Responder,
 };
@@ -23,6 +23,7 @@ use serde_json::json;
 #[macro_use]
 extern crate diesel;
 
+mod bgtask;
 mod comment;
 mod db;
 mod error;
@@ -31,7 +32,6 @@ mod models;
 mod page;
 mod schema;
 mod utils;
-mod bgtask;
 use crate::comment::*;
 use crate::db::*;
 use crate::page::*;
@@ -108,7 +108,7 @@ async fn main() -> std::io::Result<()> {
     let server = HttpServer::new(move || {
         let mode = env::var("MODE").unwrap_or("production".to_string());
 
-        let cors = if mode == "development" {
+        let cors = {
             let front_origin =
                 env::var("FRONT_ORIGIN").unwrap_or("http://127.0.0.1:5173".to_string());
 
@@ -121,8 +121,6 @@ async fn main() -> std::io::Result<()> {
                 ])
                 .supports_credentials()
                 .max_age(3600)
-        } else {
-            Cors::default()
         };
 
         let identity_middleware = IdentityMiddleware::builder()
@@ -139,7 +137,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .wrap(identity_middleware)
             .wrap(session_middleware)
-            .wrap(cors)
+            .wrap(Condition::new(mode == "development", cors))
             .route("/api/login", web::post().to(login))
             .route("/api/logout", web::get().to(logout))
             .route("/api/pages", web::get().to(get_page_all))
