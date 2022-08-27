@@ -1,7 +1,7 @@
 use crate::bgtask::BgTaskManager;
 use crate::db::Pool;
 use crate::error::{AppError, AppResult};
-use crate::mail::{notify_reply, MailNotifyTask};
+use crate::mail::MailNotifyTask;
 use crate::models::{Comment, CommentWithReplies, CountResult};
 use crate::schema::comments;
 use crate::schema::comments::dsl::*;

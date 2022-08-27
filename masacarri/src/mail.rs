@@ -1,15 +1,14 @@
 use std::env;
 
-use diesel::{prelude::*, r2d2::ConnectionManager};
+use diesel::prelude::*;
 use lettre::{
     message::Mailbox, transport::smtp::authentication::Credentials, Message, SmtpTransport,
     Transport,
 };
-use r2d2::PooledConnection;
 
 use crate::{
     error::AppResult,
-    models::{Comment, Page}, bgtask::BgActor, db::{MainDbConnection, MainDbPooledConnection},
+    models::{Comment, Page}, bgtask::BgActor, db::MainDbPooledConnection,
 };
 
 pub async fn notify_reply(
