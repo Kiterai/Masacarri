@@ -9,3 +9,4 @@ pub mod page;
 pub mod schema;
 pub mod mail;
 pub mod utils;
+pub mod bgtask;

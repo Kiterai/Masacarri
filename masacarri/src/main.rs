@@ -30,6 +30,7 @@ mod models;
 mod page;
 mod schema;
 mod utils;
+mod bgtask;
 use crate::comment::*;
 use crate::db::*;
 use crate::page::*;
@@ -83,17 +84,6 @@ async fn logout(user: Identity) -> impl Responder {
     })
 }
 
-#[derive(Default)]
-struct BgActor;
-
-impl actix::Actor for BgActor {
-    type Context = actix::SyncContext<Self>;
-
-    fn started(&mut self, _: &mut actix::SyncContext<Self>) {
-        println!("Bgtask actor spawned");
-    }
-}
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -139,11 +129,7 @@ async fn main() -> std::io::Result<()> {
 
         let session_middleware = SessionMiddleware::new(redis_store.clone(), secret_key.clone());
 
-        let bgtask_threadnum = env::var("BGTASK_THREADNUM")
-            .unwrap_or("16".to_string())
-            .parse::<usize>()
-            .expect("BGTASK_THREADNUM is invalid");
-        let bgtask_manager = actix::SyncArbiter::start(bgtask_threadnum, move || BgActor::default());
+        let bgtask_manager = bgtask::make_bgtask_manager();
 
         App::new()
             .app_data(web::Data::new(bgtask_manager))
