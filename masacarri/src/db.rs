@@ -2,9 +2,11 @@ use std::env;
 
 use actix_session::storage::RedisSessionStore;
 use diesel::{r2d2::ConnectionManager, PgConnection, Connection};
+use r2d2::PooledConnection;
 
 pub type MainDbConnection = PgConnection;
 pub type DbManager = ConnectionManager<MainDbConnection>;
+pub type MainDbPooledConnection = PooledConnection<DbManager>;
 pub type Pool = r2d2::Pool<DbManager>;
 type SessionStore = RedisSessionStore;
 

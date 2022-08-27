@@ -1,13 +1,15 @@
 use std::env;
 
+use diesel::{prelude::*, r2d2::ConnectionManager};
 use lettre::{
     message::Mailbox, transport::smtp::authentication::Credentials, Message, SmtpTransport,
     Transport,
 };
+use r2d2::PooledConnection;
 
 use crate::{
     error::AppResult,
-    models::{Comment, Page},
+    models::{Comment, Page}, bgtask::BgActor, db::{MainDbConnection, MainDbPooledConnection},
 };
 
 pub async fn notify_reply(
@@ -48,4 +50,46 @@ pub async fn notify_reply(
     mailer.send(&email)?;
 
     Ok(())
+}
+
+#[derive(actix::Message)]
+#[rtype(result = "()")]
+pub struct MailNotifyTask {
+    pub id_replyto: uuid::Uuid,
+    pub conn: MainDbPooledConnection,
+    pub comment_new: Comment,
+}
+
+impl actix::Handler<MailNotifyTask> for BgActor {
+    type Result = ();
+
+    fn handle(&mut self, task: MailNotifyTask, _: &mut Self::Context) -> Self::Result {
+        use crate::schema::comments::dsl::*;
+
+        const NOTIFY_RETRY_NUMBER: i32 = 5;
+        
+        let comment_replyto = comments.filter(id.eq(task.id_replyto)).first::<Comment>(&task.conn);
+        let comment_replyto = match comment_replyto {
+            Ok(x) => x,
+            Err(_) => return,
+        };
+        let page = crate::schema::pages::dsl::pages.filter(crate::schema::pages::id.eq(task.comment_new.page_id)).first::<crate::models::Page>(&task.conn);
+        let page = match page {
+            Ok(x) => x,
+            Err(_) => return,
+        };
+
+        for _ in 0..NOTIFY_RETRY_NUMBER {
+            let res = actix::System::new().block_on(notify_reply(&page, &comment_replyto, &task.comment_new));
+            match res {
+                Ok(_) => (),
+                Err(e) => {
+                    eprintln!("{}", e);
+                    continue;
+                },
+            };
+
+            return;
+        }
+    }
 }

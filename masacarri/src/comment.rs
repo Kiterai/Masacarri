@@ -1,6 +1,7 @@
+use crate::bgtask::BgTaskManager;
 use crate::db::Pool;
 use crate::error::{AppError, AppResult};
-use crate::mail::notify_reply;
+use crate::mail::{notify_reply, MailNotifyTask};
 use crate::models::{Comment, CommentWithReplies, CountResult};
 use crate::schema::comments;
 use crate::schema::comments::dsl::*;
@@ -160,6 +161,7 @@ pub async fn add_comment(
     path_param: web::Path<NewCommentRequestPath>,
     req: HttpRequest,
     new_comment: web::Json<NewCommentRequest>,
+    bgtask_manager: web::Data<BgTaskManager>,
 ) -> AppResult<impl Responder> {
     let conn = db.get()?;
 
@@ -246,34 +248,10 @@ pub async fn add_comment(
     if let Some(id_replyto) = comment_new.reply_to {
         let comment_new = comment_new.clone();
 
-        actix_web::rt::spawn(async move {
-            const NOTIFY_RETRY_NUMBER: i32 = 5;
-            
-            let page = crate::schema::pages::dsl::pages.filter(crate::schema::pages::id.eq(comment_new.page_id)).first::<crate::models::Page>(&conn);
-            let page = match page {
-                Ok(x) => x,
-                Err(_) => return,
-            };
-
-            for _ in 0..NOTIFY_RETRY_NUMBER {
-                let comment_replyto = comments.filter(id.eq(id_replyto)).first::<Comment>(&conn);
-
-                let comment_replyto = match comment_replyto {
-                    Ok(x) => x,
-                    Err(_) => continue,
-                };
-
-                let res = notify_reply(&page, &comment_replyto, &comment_new).await;
-                match res {
-                    Ok(_) => (),
-                    Err(e) => {
-                        eprintln!("{}", e);
-                        continue;
-                    },
-                };
-
-                return;
-            }
+        bgtask_manager.do_send(MailNotifyTask{
+            id_replyto: id_replyto,
+            conn: conn,
+            comment_new: comment_new,
         });
     }
 
