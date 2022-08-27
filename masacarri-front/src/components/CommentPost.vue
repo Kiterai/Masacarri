@@ -4,6 +4,7 @@ import { marked } from 'marked';
 import { useCommentsStore, type ShowingComment } from '@/CommentsStore';
 import { storeToRefs } from 'pinia';
 import CommentForm from './CommentForm.vue';
+import sanitizeHtml from 'sanitize-html';
 
 const store = useCommentsStore();
 const { comment_replyto } = storeToRefs(store);
@@ -19,6 +20,19 @@ const emit = defineEmits<{
     (e: 'showRepliesClicked', id: string): void,
     (e: 'showContextsClicked', id: string): void,
 }>();
+
+const content = computed(() => {
+    console.log(`raw: ${props.comment.content}`);
+    console.log(`parsed: ${marked.parse(props.comment.content)}`);
+    console.log(`sanitized: ${sanitizeHtml(props.comment.content)}`);
+    console.log(`sanitized-parsed: ${marked.parse(sanitizeHtml(props.comment.content))}`);
+    console.log(`parsed-sanitized: ${sanitizeHtml(marked.parse(props.comment.content))}`);
+    const parsed = marked.parse(props.comment.content);
+    const sanitized = sanitizeHtml(parsed, {
+        disallowedTagsMode: 'recursiveEscape',
+    })
+    return sanitized;
+});
 
 const date_str = computed(() => {
     return props.comment.date.format('YYYY-MM-DD HH:mm:ss');
@@ -66,7 +80,7 @@ function toReplyto() {
             <a class="post-name">{{ props.comment.name }}</a>
             <time class="post-date" :datetime="props.comment.date.toISOString()">{{ date_str }}</time>
         </div>
-        <div class="post-content" v-html="marked.parse(props.comment.content)"></div>
+        <div class="post-content" v-html="content"></div>
         <div class="btns" v-if="!props.hide_buttons">
             <button class="btn btn-reply" v-if="comment_replyto == comment.comment_id"
                 @click="cancelReplyClicked">返信をキャンセル</button>
