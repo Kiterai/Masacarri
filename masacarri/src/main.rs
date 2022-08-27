@@ -6,6 +6,7 @@ use actix_files::NamedFile;
 use actix_identity::{Identity, IdentityMiddleware};
 use actix_session::SessionMiddleware;
 use actix_web::dev::{fn_service, ServiceRequest, ServiceResponse};
+use actix_web::middleware::Logger;
 use actix_web::{
     cookie::Key, http, web, App, HttpMessage, HttpRequest, HttpResponse, HttpServer, Responder,
 };
@@ -87,6 +88,7 @@ async fn logout(user: Identity) -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
+    env_logger::init();
 
     println!("Masacarri Server Starting...");
 
@@ -134,6 +136,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(bgtask_manager))
             .app_data(web::Data::new(pool.clone()))
+            .wrap(Logger::default())
             .wrap(identity_middleware)
             .wrap(session_middleware)
             .wrap(cors)
