@@ -129,7 +129,7 @@ export const useCommentsStore = defineStore({
                     return res;
                 });
         },
-        loadCommentReply(replyto: string, index: number = 1, comment_per_page: number = 6) {
+        loadCommentReply(replyto: string, index: number | null = 1, comment_per_page: number = 6) {
             return new Promise<Comment>((resolve) => {
                 const target_comment = this.comments.get(replyto);
                 if (target_comment) {
@@ -149,6 +149,7 @@ export const useCommentsStore = defineStore({
                                 tmp.count_replies = res.count;
                                 this.comments.set(target_comment.id, tmp);
                             }
+                            index = index ? index : latestPageIndex(res.count, comment_per_page);
                             this.sub_pagination = {
                                 index: index,
                                 item_count: res.count,
@@ -182,7 +183,7 @@ export const useCommentsStore = defineStore({
                         });
                 });
         },
-        loadCommentContext(contextof: string, index: number = 1, comment_per_page: number = 7) {
+        loadCommentContext(contextof: string, index: number | null = null, comment_per_page: number = 7) {
             return new Promise<Comment>((resolve) => {
                 const target_comment = this.comments.get(contextof);
                 if (target_comment) {
@@ -197,6 +198,7 @@ export const useCommentsStore = defineStore({
                 .then((target_comment) => {
                     return app_fetch(`/api/pages/${this.page_id}/comments_count?contextof=${contextof}`)
                         .then((res) => {
+                            index = index ? index : latestPageIndex(res.count, comment_per_page);
                             this.sub_pagination = {
                                 index: index,
                                 item_count: res.count,
@@ -241,7 +243,7 @@ export const useCommentsStore = defineStore({
                                 this.comment_replyto = undefined;
                             }
                             if (comment.reply_to) {
-                                return this.loadCommentReply(comment.reply_to);
+                                return this.loadCommentContext(comment.reply_to);
                             } else {
                                 return this.loadComment();
                             }
