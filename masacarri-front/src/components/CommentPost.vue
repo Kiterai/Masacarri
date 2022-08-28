@@ -22,15 +22,8 @@ const emit = defineEmits<{
 }>();
 
 const content = computed(() => {
-    console.log(`raw: ${props.comment.content}`);
-    console.log(`parsed: ${marked.parse(props.comment.content)}`);
-    console.log(`sanitized: ${sanitizeHtml(props.comment.content)}`);
-    console.log(`sanitized-parsed: ${marked.parse(sanitizeHtml(props.comment.content))}`);
-    console.log(`parsed-sanitized: ${sanitizeHtml(marked.parse(props.comment.content))}`);
     const parsed = marked.parse(props.comment.content);
-    const sanitized = sanitizeHtml(parsed, {
-        disallowedTagsMode: 'recursiveEscape',
-    })
+    const sanitized = sanitizeHtml(parsed);
     return sanitized;
 });
 
@@ -74,7 +67,8 @@ function toReplyto() {
 </script>
 
 <template>
-    <div class="post" :data-current-focus="store.comment_shows_reply == props.comment.comment_id || store.comment_shows_context == props.comment.comment_id">
+    <div class="post"
+        :data-current-focus="store.comment_shows_reply == props.comment.comment_id || store.comment_shows_context == props.comment.comment_id">
         <div class="post-meta">
             <a v-if="props.comment.parent" class="post-isreply" @click="toReplyto">返信:</a>
             <a class="post-name">{{ props.comment.name }}</a>
@@ -166,5 +160,45 @@ function toReplyto() {
 
 .post-list {
     margin-left: 1em;
+}
+</style>
+
+<style>
+.post-content ul,
+.post-content ol {
+    margin-left: 1em;
+}
+
+.post-content hr {
+    margin: 0.5em 0;
+}
+
+.post-content p:not(:last-child) {
+    margin-bottom: 0.8em;
+}
+
+.post-content table {
+    margin: 0.5em 0;
+}
+
+.post-content thead {
+    border-bottom: 1px solid #000;
+}
+
+.post-content td,
+.post-content th {
+    border-left: 1px solid #000;
+    padding: 0.3em;
+}
+
+.post-content td,
+.post-content th {
+    border-left: 1px solid #000;
+    padding: 0.3em;
+}
+
+.post-content td:first-child,
+.post-content th:first-child {
+    border-left: none;
 }
 </style>
