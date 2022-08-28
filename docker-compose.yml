@@ -2,18 +2,33 @@ version: '3'
 services:
   redis:
     image: "redis:latest"
-    ports:
-      - "6379:6379"
     volumes:
       - "./data/redis:/data"
   postgres:
     image: postgres:latest
-    ports:
-      - "5432:5432"
     volumes:
-      - ./data/postgres/init:/docker-entrypoint-initdb.d
-      - ./data/postgres/data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: docker
-      POSTGRES_PASSWORD: docker
-      POSTGRES_DB: test_database
+      POSTGRES_USER: masacarri
+      POSTGRES_PASSWORD: masacarri
+      POSTGRES_DB: masacarri_data
+  masacarri:
+    image: masacarri
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      DATABASE_URL: postgres://masacarri:masacarri@postgres/masacarri_data
+      SESSION_DATABASE_URL: redis://redis:6379
+      HOST: 0.0.0.0
+      PORT: 3000
+      SITE_NAME: Masacarri Test Site
+      # mail server settings
+      SMTP_HOST: 
+      SMTP_USER: 
+      SMTP_PASSWORD: 
+      SMTP_ENCRYPTION: starttls
+      SMTP_PORT: 
+      SMTP_MAILADDR: masacarri@example.com
