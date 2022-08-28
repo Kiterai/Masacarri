@@ -16,4 +16,5 @@ RUN apt-get update && apt-get install -y libssl1.1 libpq5 && rm -rf /var/lib/apt
 COPY --from=rustbuilder /usr/local/cargo/bin/masacarri /usr/local/bin/masacarri
 COPY --from=rustbuilder /usr/local/cargo/bin/masacarri_cli /usr/local/bin/masacarri_cli
 COPY --from=nodebuilder /usr/src/app/dist /usr/local/share/masacarri-front/dist
-CMD ["masacarri"]
+COPY ./entry-point.sh .
+CMD ["sh", "./entry-point.sh"]

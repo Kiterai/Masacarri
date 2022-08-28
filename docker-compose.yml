@@ -25,6 +25,9 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
       SITE_NAME: Masacarri Test Site
+      # admin user settings
+      MASACARRI_USER: admin
+      MASACARRI_PASSWORD: password
       # mail server settings
       SMTP_HOST: 
       SMTP_USER: 
