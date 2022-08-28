@@ -5,6 +5,7 @@ import { useCommentsStore } from '@/CommentsStore';
 import { storeToRefs } from 'pinia';
 import { computed } from "@vue/reactivity";
 import type { Comment } from "@/models";
+import { repository_url } from "@/utils";
 
 const store = useCommentsStore();
 
@@ -94,11 +95,11 @@ const { comment_showlist } = storeToRefs(store);
     <CommentForm></CommentForm>
     <nav class="pagination_nav">
       <button v-for="index in linkCommentPageIndices" @click="store.loadComment(index)" class="comment_page_btn"
-        :data-isactive="store.comment_page_index == index">{{ index }}</button>
+        :data-isactive="store.comment_page_index == index">{{  index  }}</button>
     </nav>
     <nav v-if="store.sub_pagination" class="pagination_nav sub_pagination_nav">
       <button v-for="index in subLinkCommentPageIndices" class="comment_page_btn" @click="sub_pagination_jump(index)"
-        :data-isactive="store.sub_pagination.index == index">{{ index }}</button>
+        :data-isactive="store.sub_pagination.index == index">{{  index  }}</button>
     </nav>
     <div class="post-list">
       <CommentPost v-for="comment in comment_showlist" :key="comment.comment_id" :comment="comment"
@@ -108,14 +109,14 @@ const { comment_showlist } = storeToRefs(store);
     </div>
     <nav v-if="store.sub_pagination" class="pagination_nav sub_pagination_nav">
       <button v-for="index in subLinkCommentPageIndices" class="comment_page_btn" @click="sub_pagination_jump(index)"
-        :data-isactive="store.sub_pagination.index == index">{{ index }}</button>
+        :data-isactive="store.sub_pagination.index == index">{{  index  }}</button>
     </nav>
     <nav class="pagination_nav">
       <button v-for="index in linkCommentPageIndices" @click="store.loadComment(index)" class="comment_page_btn"
-        :data-isactive="store.comment_page_index == index">{{ index }}</button>
+        :data-isactive="store.comment_page_index == index">{{  index  }}</button>
     </nav>
 
-    <p>Powered by Masacarri</p>
+    <p>Powered by <a target="_blank" rel="noopener noreferrer" :href="repository_url">Masacarri</a></p>
   </div>
 
 </template>

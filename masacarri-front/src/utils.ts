@@ -23,3 +23,5 @@ export function app_fetch<T>(path: string, method?: string, data?: T, is_admin?:
 export function app_fetch_admin<T>(path: string, method?: string, data?: T) {
     return app_fetch(path, method, data, true);
 }
+
+export const repository_url = import.meta.env.VITE_APP_REPOSITORY_URL;
