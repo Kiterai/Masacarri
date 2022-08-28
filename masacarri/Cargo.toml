@@ -2,6 +2,7 @@
 name = "masacarri"
 version = "0.1.0"
 edition = "2021"
+autobins = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -27,3 +28,11 @@ serde_json = "1.0.83"
 static_assertions = "1.1.0"
 thiserror = "1.0.32"
 uuid = { version = "0.8", features = ["v4", "serde"] }
+
+[[bin]]
+name="masacarri"
+path="src/main.rs"
+
+[[bin]]
+name="masacarri_cli"
+path="src/bin/cli.rs"
