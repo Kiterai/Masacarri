@@ -95,20 +95,28 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init();
 
-    {
-        let db_conn = establish_main_db();
-        let res = embedded_migrations::run_with_output(&db_conn, &mut std::io::stdout());
-        match res {
-            Ok(_) => {
-                println!("successfully setup database");
+    let args: Vec<String> = env::args().collect();
+
+    if let Some(cmd) = args.get(1) {
+        if cmd == "setup" {
+            let db_conn = establish_main_db();
+            let res = embedded_migrations::run_with_output(&db_conn, &mut std::io::stdout());
+            match res {
+                Ok(_) => {
+                    println!("successfully setup database");
+                }
+                Err(e) => {
+                    eprintln!("failed to database migration");
+                    return std::io::Result::Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("failed to database migration: {}", e.to_string()),
+                    ));
+                }
             }
-            Err(e) => {
-                eprintln!("failed to database migration");
-                return std::io::Result::Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("failed to database migration: {}", e.to_string()),
-                ));
-            }
+
+            return Ok(());
+        } else {
+            panic!("unknown command: {}", cmd);
         }
     }
 

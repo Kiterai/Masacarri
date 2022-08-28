@@ -12,7 +12,7 @@ RUN npm install && npm run build-only
 
 FROM debian:buster-slim
 WORKDIR /usr/local/share/masacarri
-RUN apt-get update && apt-get install -y libssl1.1 libpq5 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libssl1.1 libpq5 ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=rustbuilder /usr/local/cargo/bin/masacarri /usr/local/bin/masacarri
 COPY --from=rustbuilder /usr/local/cargo/bin/masacarri_cli /usr/local/bin/masacarri_cli
 COPY --from=nodebuilder /usr/src/app/dist /usr/local/share/masacarri-front/dist
