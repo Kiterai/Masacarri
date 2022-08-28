@@ -14,6 +14,9 @@ use diesel::ExpressionMethods;
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 
+#[macro_use]
+extern crate diesel_migrations;
+
 use dotenv::dotenv;
 use error::{AppError, AppResult};
 use schema::users;
@@ -85,10 +88,29 @@ async fn logout(user: Identity) -> impl Responder {
     })
 }
 
+diesel_migrations::embed_migrations!("migrations");
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init();
+
+    {
+        let db_conn = establish_main_db();
+        let res = embedded_migrations::run_with_output(&db_conn, &mut std::io::stdout());
+        match res {
+            Ok(_) => {
+                println!("successfully setup database");
+            }
+            Err(e) => {
+                eprintln!("failed to database migration");
+                return std::io::Result::Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("failed to database migration: {}", e.to_string()),
+                ));
+            }
+        }
+    }
 
     println!("Masacarri Server Starting...");
 
