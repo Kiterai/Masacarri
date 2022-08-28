@@ -38,7 +38,7 @@ fn add_user(conn: MainDbConnection, username: &str) {
 
     match res {
         Ok(_) => {
-            println!("user deletion succeeded: {}", username);
+            println!("user creation succeeded: {}", username);
         }
         Err(_) => {
             eprintln!("failed to create user");
@@ -52,7 +52,7 @@ fn delete_user(conn: MainDbConnection, username: &str) {
 
     match res {
         Ok(_) => {
-            println!("user creation succeeded: {}", username);
+            println!("user deletion succeeded: {}", username);
         }
         Err(_) => {
             eprintln!("failed to load users");
@@ -161,14 +161,14 @@ fn main() {
     let conn = db::establish_main_db();
 
     if args.len() <= 1 {
-        eprintln!("command needed");
+        eprintln!("command needed: adduser, deluser, list, passwd");
         return;
     }
 
     match args[1].as_str() {
         "adduser" => {
             if args.len() <= 2 {
-                eprintln!("username needed");
+                eprintln!("username needed: masacarri_cli adduser [username]");
                 return;
             }
 
@@ -176,7 +176,7 @@ fn main() {
         }
         "deluser" => {
             if args.len() <= 2 {
-                eprintln!("username needed");
+                eprintln!("username needed: masacarri_cli deluser [username]");
                 return;
             }
 
@@ -184,18 +184,18 @@ fn main() {
         }
         "list" => {
             if args.len() <= 2 {
-                eprintln!("username needed");
+                eprintln!("paramater needed: masacarri_cli list [user,page]");
                 return;
             }
             match args[2].as_str() {
                 "user" => list_users(conn),
                 "page" => list_pages(conn),
-                item => eprintln!("unknown list item: '{}'", item),
+                item => eprintln!("unknown list parameter: '{}'", item),
             }
         }
         "passwd" => {
             if args.len() <= 2 {
-                eprintln!("username needed");
+                eprintln!("username needed: masacarri_cli passwd [username]");
                 return;
             }
             update_password(conn, args[2].as_str());
