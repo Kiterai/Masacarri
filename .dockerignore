@@ -1,0 +1,5 @@
+masacarri/target
+masacarri/.env
+masacarri-front/node_modules
+masacarri-front/dist
+masacarri-front/.vscode
