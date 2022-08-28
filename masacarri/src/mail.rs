@@ -7,14 +7,16 @@ use lettre::{
 };
 
 use crate::{
+    bgtask::BgActor,
+    db::MainDbPooledConnection,
     error::AppResult,
-    models::{Comment, Page}, bgtask::BgActor, db::MainDbPooledConnection,
+    models::{Comment, Page},
 };
 
 pub async fn notify_reply(
     page: &Page,
     comment_replyto: &Comment,
-    _comment_reply: &Comment,
+    comment_reply: &Comment,
 ) -> AppResult<()> {
     let replyto_addr = match &comment_replyto.mail_addr {
         Some(x) => x,
@@ -32,8 +34,17 @@ pub async fn notify_reply(
     let email = Message::builder()
         .from(mailaddr_from.parse()?)
         .to(Mailbox::new(None, replyto_addr.parse()?))
-        .subject(format!("{}: Your comment got a reply", site_name))
-        .body(format!("Check reply to your comment: {}", page.page_url))?;
+        .subject(format!("{}: あなたのコメントに返信が付きました", site_name))
+        .body(format!(
+            "{} | {} (URL: {})\n\n{}:\n{}\n\n{}:\n{}",
+            page.title,
+            site_name,
+            page.page_url,
+            comment_replyto.display_name,
+            comment_replyto.content,
+            comment_reply.display_name,
+            comment_reply.content
+        ))?;
 
     let cred = Credentials::new(smtp_user, smtp_password);
 
@@ -66,26 +77,34 @@ impl actix::Handler<MailNotifyTask> for BgActor {
         use crate::schema::comments::dsl::*;
 
         const NOTIFY_RETRY_NUMBER: i32 = 5;
-        
-        let comment_replyto = comments.filter(id.eq(task.id_replyto)).first::<Comment>(&task.conn);
+
+        let comment_replyto = comments
+            .filter(id.eq(task.id_replyto))
+            .first::<Comment>(&task.conn);
         let comment_replyto = match comment_replyto {
             Ok(x) => x,
             Err(_) => return,
         };
-        let page = crate::schema::pages::dsl::pages.filter(crate::schema::pages::id.eq(task.comment_new.page_id)).first::<crate::models::Page>(&task.conn);
+        let page = crate::schema::pages::dsl::pages
+            .filter(crate::schema::pages::id.eq(task.comment_new.page_id))
+            .first::<crate::models::Page>(&task.conn);
         let page = match page {
             Ok(x) => x,
             Err(_) => return,
         };
 
         for _ in 0..NOTIFY_RETRY_NUMBER {
-            let res = actix::System::new().block_on(notify_reply(&page, &comment_replyto, &task.comment_new));
+            let res = actix::System::new().block_on(notify_reply(
+                &page,
+                &comment_replyto,
+                &task.comment_new,
+            ));
             match res {
                 Ok(_) => (),
                 Err(e) => {
                     eprintln!("{}", e);
                     continue;
-                },
+                }
             };
 
             return;
