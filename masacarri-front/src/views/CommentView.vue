@@ -43,15 +43,28 @@ const linkCommentPageIndices = computed(() => {
   const indices: Set<number> = new Set();
   const lastIndex = ((store.comments_count + commentsPerPage - 1) / commentsPerPage) | 0;
 
-  indices.add(1);
-  indices.add((store.comment_page_index + 1) / 2 | 0);
-  indices.add(store.comment_page_index - 1);
-  indices.add(store.comment_page_index);
-  indices.add(store.comment_page_index + 1);
-  indices.add((store.comment_page_index + lastIndex + 1) / 2 | 0);
-  indices.add(lastIndex);
+  {
+    let index = store.comment_page_index;
+    let d = 1;
+    while (index > 1) {
+      indices.add(index);
+      index -= d;
+      d *= 2;
+    }
+    indices.add(1);
+  }
+  {
+    let index = store.comment_page_index;
+    let d = 1;
+    while (index < lastIndex) {
+      indices.add(index);
+      index += d;
+      d *= 2;
+    }
+    indices.add(lastIndex);
+  }
 
-  return Array.from(indices).filter((n) => { return 1 <= n && n <= lastIndex; })
+  return Array.from(indices).sort();
 });
 const subLinkCommentPageIndices = computed(() => {
   if (!store.sub_pagination) {
@@ -65,15 +78,28 @@ const subLinkCommentPageIndices = computed(() => {
   const indices: Set<number> = new Set();
   const lastIndex = ((count + item_per_page - 1) / item_per_page) | 0;
 
-  indices.add(1);
-  indices.add((page_index + 1) / 2 | 0);
-  indices.add(page_index - 1);
-  indices.add(page_index);
-  indices.add(page_index + 1);
-  indices.add((page_index + lastIndex + 1) / 2 | 0);
-  indices.add(lastIndex);
+  {
+    let index = page_index;
+    let d = 1;
+    while (index > 1) {
+      indices.add(index);
+      index -= d;
+      d *= 2;
+    }
+    indices.add(1);
+  }
+  {
+    let index = page_index;
+    let d = 1;
+    while (index < lastIndex) {
+      indices.add(index);
+      index += d;
+      d *= 2;
+    }
+    indices.add(lastIndex);
+  }
 
-  return Array.from(indices).filter((n) => { return 1 <= n && n <= lastIndex; })
+  return Array.from(indices).sort();
 });
 
 function sub_pagination_jump(index: number) {
