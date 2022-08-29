@@ -21,12 +21,26 @@ function login() {
     });
 }
 
+function logout() {
+  login_form_info.value = "in progress...";
+  app_fetch_admin(`/api/logout`)
+    .then(res => {
+      is_logined.value = false;
+      login_form_info.value = null;
+    })
+    .catch(err => {
+      login_form_info.value = "logout error";
+    });
+}
+
 </script>
 
 <template>
   <div id="admin">
     <div v-if="is_logined">
       <nav>Successfully loginned</nav>
+
+      <nav><button type="button" @click="logout">[logout]</button></nav>
 
       <PagesForm></PagesForm>
 
@@ -36,8 +50,8 @@ function login() {
       <form>
         <p>user: <input v-model="login_form.user" type="text" name="user" /></p>
         <p>password: <input v-model="login_form.password" type="password" name="password" /></p>
-        <p class="form_info" v-if="login_form_info">{{ login_form_info }}</p>
-        <button type="button" @click="login">login</button>
+        <p class="form_info" v-if="login_form_info">{{  login_form_info  }}</p>
+        <button type="button" @click="login">[login]</button>
       </form>
     </div>
   </div>
