@@ -25,3 +25,7 @@ export function app_fetch_admin<T>(path: string, method?: string, data?: T) {
 }
 
 export const repository_url = import.meta.env.VITE_APP_REPOSITORY_URL;
+
+export function updateHeight(h: number) {
+    parent.postMessage(['masacarri-height', h], "*");
+}

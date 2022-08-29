@@ -6,6 +6,7 @@ import router from './router'
 import './assets/main.css'
 import { marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';
+import { updateHeight } from './utils'
 
 const marked_renderer = new marked.Renderer();
 marked_renderer.link = (href, title, text) => {
@@ -27,3 +28,15 @@ app.use(pinia)
 app.use(router)
 
 app.mount('#app')
+
+const app_elem = document.querySelector("#app");
+if (app_elem) {
+    const resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            if (entry.target == app_elem) {
+                updateHeight(entry.borderBoxSize[0].blockSize);
+            }
+        }
+    });
+    resizeObserver.observe(app_elem);
+}
