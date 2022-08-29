@@ -29,6 +29,7 @@ pub async fn notify_reply(
     let smtp_host = env::var("SMTP_HOST")?;
 
     let email = Message::builder()
+        .header(lettre::message::header::ContentType::TEXT_PLAIN)
         .from(mailaddr_from.parse()?)
         .to(Mailbox::new(None, replyto_addr.parse()?))
         .subject(format!("{}: あなたのコメントに返信が付きました", site_name))
