@@ -41,27 +41,29 @@ const commentsPerPage = 7;
 
 const linkCommentPageIndices = computed(() => {
   const indices: Set<number> = new Set();
-  const lastIndex = ((store.comments_count + commentsPerPage - 1) / commentsPerPage) | 0;
+  const lastIndex = Math.max(1, ((store.comments_count + commentsPerPage - 1) / commentsPerPage) | 0);
 
-  {
-    let index = store.comment_page_index;
-    let d = 1;
-    while (index > 1) {
-      indices.add(index);
-      index -= d;
-      d *= 2;
+  if (store.comments_count > 0) {
+    {
+      let index = store.comment_page_index;
+      let d = 1;
+      while (index > 1) {
+        indices.add(index);
+        index -= d;
+        d *= 2;
+      }
+      indices.add(1);
     }
-    indices.add(1);
-  }
-  {
-    let index = store.comment_page_index;
-    let d = 1;
-    while (index < lastIndex) {
-      indices.add(index);
-      index += d;
-      d *= 2;
+    {
+      let index = store.comment_page_index;
+      let d = 1;
+      while (index < lastIndex) {
+        indices.add(index);
+        index += d;
+        d *= 2;
+      }
+      indices.add(lastIndex);
     }
-    indices.add(lastIndex);
   }
 
   return Array.from(indices).sort();
@@ -76,7 +78,7 @@ const subLinkCommentPageIndices = computed(() => {
   const page_index = store.sub_pagination.index;
 
   const indices: Set<number> = new Set();
-  const lastIndex = ((count + item_per_page - 1) / item_per_page) | 0;
+  const lastIndex = Math.max(1, ((count + item_per_page - 1) / item_per_page) | 0);
 
   {
     let index = page_index;
