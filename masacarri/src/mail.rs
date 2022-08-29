@@ -27,9 +27,6 @@ pub async fn notify_reply(
     let mailaddr_from = env::var("SMTP_MAILADDR")?;
     let smtp_encryption = env::var("SMTP_ENCRYPTION")?;
     let smtp_host = env::var("SMTP_HOST")?;
-    let smtp_port = env::var("SMTP_PORT")?;
-    let smtp_user = env::var("SMTP_USER")?;
-    let smtp_password = env::var("SMTP_PASSWORD")?;
 
     let email = Message::builder()
         .from(mailaddr_from.parse()?)
@@ -46,16 +43,24 @@ pub async fn notify_reply(
             comment_reply.content
         ))?;
 
-    let cred = Credentials::new(smtp_user, smtp_password);
+    let mut mailer = match smtp_encryption.as_str() {
+        "starttls" => SmtpTransport::starttls_relay(&smtp_host).unwrap(),
+        "tls" => SmtpTransport::relay(&smtp_host).unwrap(),
+        "plain" => SmtpTransport::builder_dangerous(&smtp_host),
+        x => {
+            panic!("invalid SMTP_ENCRYPTION value: {}", x);
+        }
+    };
 
-    let mailer = match smtp_encryption.as_str() {
-        "starttls" => SmtpTransport::starttls_relay(&smtp_host),
-        _ => SmtpTransport::relay(&smtp_host),
+    if let Ok(smtp_port) = env::var("SMTP_PORT") {
+        mailer = mailer.port(smtp_port.parse()?);
     }
-    .unwrap()
-    .port(smtp_port.parse()?)
-    .credentials(cred)
-    .build();
+    if let (Ok(smtp_user), Ok(smtp_password)) = (env::var("SMTP_USER"), env::var("SMTP_PASSWORD")) {
+        let cred = Credentials::new(smtp_user, smtp_password);
+        mailer = mailer.credentials(cred);
+    }
+
+    let mailer = mailer.build();
 
     mailer.send(&email)?;
 
