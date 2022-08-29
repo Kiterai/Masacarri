@@ -71,7 +71,7 @@ function toReplyto() {
         :data-current-focus="store.comment_shows_reply == props.comment.comment_id || store.comment_shows_context == props.comment.comment_id">
         <div class="post-meta">
             <a v-if="props.comment.parent" class="post-isreply" @click="toReplyto">返信:</a>
-            <a class="post-name">{{ props.comment.name }}</a>
+            <a class="post-name" :href="props.comment.site_url" target="_blank" rel="noopener noreferrer">{{ props.comment.name }}</a>
             <time class="post-date" :datetime="props.comment.date.toISOString()">{{ date_str }}</time>
         </div>
         <div class="post-content" v-html="content"></div>
