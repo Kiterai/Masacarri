@@ -24,7 +24,7 @@ Masacarri is lightwight comment system. It can be embedded to your pages.
 
 ## How to use
 
-Admin panel is available on `/admin`. You can register your pages and comment forms are available on each pages.
+Start Masacarri HTTP server and admin panel is available on `/admin`. You can register your pages and comment forms are available on each pages.
 
 ## How to embed to your pages
 
