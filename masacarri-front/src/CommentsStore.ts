@@ -243,7 +243,7 @@ export const useCommentsStore = defineStore({
                                 this.comment_replyto = undefined;
                             }
                             if (comment.reply_to) {
-                                return this.loadCommentContext(comment.reply_to);
+                                return this.loadCommentContext(res.id);
                             } else {
                                 return this.loadComment();
                             }
