@@ -173,7 +173,8 @@ const { comment_showlist } = storeToRefs(store);
 
 .pagination_nav {
   display: flex;
-  justify-content: center
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .sub_pagination_nav .comment_page_btn {
