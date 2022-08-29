@@ -1,10 +1,10 @@
 use crate::bgtask::BgTaskManager;
-use crate::db::Pool;
+use crate::db::{MainDbPooledConnection, Pool};
 use crate::error::{AppError, AppResult};
 use crate::mail::MailNotifyTask;
 use crate::models::{Comment, CommentWithReplies, CountResult};
-use crate::schema::comments;
 use crate::schema::comments::dsl::*;
+use crate::schema::{self, comments};
 use crate::utils::empty_to_none;
 use actix_identity::Identity;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
@@ -156,14 +156,34 @@ impl From<Comment> for GetCommentResponse {
     }
 }
 
+fn chk_page_public(conn: &MainDbPooledConnection, tgt_page_id: uuid::Uuid) -> AppResult<()> {
+    let is_public: bool = schema::pages::dsl::pages
+        .select(schema::pages::dsl::published)
+        .filter(schema::pages::dsl::id.eq(tgt_page_id))
+        .first(conn)?;
+
+    if !is_public {
+        return Err(AppError::PublishableErr(
+            "This page is private.".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
 pub async fn add_comment(
     db: web::Data<Pool>,
     path_param: web::Path<NewCommentRequestPath>,
     req: HttpRequest,
     new_comment: web::Json<NewCommentRequest>,
     bgtask_manager: web::Data<BgTaskManager>,
+    user: Option<Identity>,
 ) -> AppResult<impl Responder> {
     let conn = db.get()?;
+
+    if user.is_none() {
+        chk_page_public(&conn, path_param.page)?;
+    }
 
     let NewCommentRequest {
         reply_to: r_reply_to,
@@ -248,7 +268,7 @@ pub async fn add_comment(
     if let Some(id_replyto) = comment_new.reply_to {
         let comment_new = comment_new.clone();
 
-        bgtask_manager.do_send(MailNotifyTask{
+        bgtask_manager.do_send(MailNotifyTask {
             id_replyto: id_replyto,
             conn: conn,
             comment_new: comment_new,
@@ -262,8 +282,13 @@ pub async fn get_comments(
     db: web::Data<Pool>,
     path_param: web::Path<GetCommentsRequestPath>,
     query_param: web::Query<GetCommentsRequestQuery>,
+    user: Option<Identity>,
 ) -> AppResult<impl Responder> {
     let conn = db.get()?;
+
+    if user.is_none() {
+        chk_page_public(&conn, path_param.page)?;
+    }
 
     let comments_per_page = query_param.num.unwrap_or(DEFAULT_COMMENTS_PER_PAGE);
     let comments_page_index = query_param.index.unwrap_or(DEFAULT_PAGE_INDEX);
@@ -361,8 +386,13 @@ pub async fn get_comments(
 pub async fn get_comment(
     db: web::Data<Pool>,
     path_param: web::Path<GetCommentRequestPath>,
+    user: Option<Identity>,
 ) -> AppResult<impl Responder> {
     let conn = db.get()?;
+
+    if user.is_none() {
+        chk_page_public(&conn, path_param.page)?;
+    }
 
     let result = sql_query(
         r#"
@@ -396,8 +426,13 @@ pub async fn get_comment_count(
     db: web::Data<Pool>,
     path_param: web::Path<GetCommentsRequestPath>,
     query_param: web::Query<GetCommentsRequestQuery>,
+    user: Option<Identity>,
 ) -> AppResult<impl Responder> {
     let conn = db.get()?;
+
+    if user.is_none() {
+        chk_page_public(&conn, path_param.page)?;
+    }
 
     let result: i64 = match (query_param.replyto, query_param.contextof) {
         (None, None) => comments
