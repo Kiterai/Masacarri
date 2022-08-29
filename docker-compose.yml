@@ -11,7 +11,11 @@ services:
       POSTGRES_PASSWORD: masacarri
       POSTGRES_DB: masacarri_data
   masacarri:
-    image: masacarri
+    ## image from Dockerfile
+    # build: .
+    ## image from DockerHub
+    image: kiterai/masacarri
+
     ports:
       - "3000:3000"
     depends_on:
@@ -28,10 +32,10 @@ services:
       MASACARRI_PASSWORD: password
       # mail server settings
       SMTP_HOST: 
+      SMTP_PORT: 
       SMTP_USER: 
       SMTP_PASSWORD: 
       SMTP_ENCRYPTION: starttls
-      SMTP_PORT: 
       SMTP_MAILADDR: masacarri@example.com
 
 volumes:
