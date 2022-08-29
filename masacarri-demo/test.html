@@ -6,9 +6,14 @@
         <title>Masacarri Demo</title>
     </head>
     <body>
-        <p>This is Masacarri Test article.</p>
+        <h1>This is Masacarri Test article.</h1>
+
+        <p>bra bra bra...</p>
+
+        <h2>Comment</h2>
+
         <div style="border: 1px solid transparent">
-            <iframe id="masacarri" src="http://127.0.0.1:3000/" style="border: none; width: 100%;"></iframe>
+            <iframe id="masacarri" src="http://127.0.0.1:3000/pages/(replace here to uuid)" style="border: none; width: 100%;"></iframe>
             <script>
                 window.addEventListener('message', msg => {
                     if(msg.data[0] == 'masacarri-height'){
