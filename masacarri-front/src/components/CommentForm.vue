@@ -53,7 +53,7 @@ function submit_comment() {
       <dt>サイトURL</dt>
       <dd><input type="url" name="site_url" v-model="comment_form.site_url" /></dd>
       <dt class="required-label">コメント</dt>
-      <dd><textarea rows="3" required v-model="comment_form.content"></textarea></dd>
+      <dd><textarea rows="3" required v-model="comment_form.content" placeholder="**Markdownが使用できます**"></textarea></dd>
       <dt title="コメント欄上で表示されることはありません">返信通知先</dt>
       <dd><input type="email" name="mail_addr" placeholder="info@example.com" v-model="comment_form.mail_addr" /></dd>
       <button class="comment-submit" type="button" @click="submit_comment">{{ comment_replyto ? "返信" : "送信" }}</button>
