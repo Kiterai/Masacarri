@@ -85,6 +85,7 @@ pub struct GetCommentResponse {
     content: String,
     count_replies: Option<i64>,
     created_time: DateTime<Utc>,
+    is_spam: Option<bool>,
 }
 
 #[derive(Deserialize)]
@@ -121,12 +122,10 @@ impl From<CommentWithReplies> for GetCommentResponse {
             id: r_id,
             page_id: r_page_id,
             reply_to: r_reply_to,
-            display_name: r_display_name,
-            site_url: r_site_url,
-            content: match is_spam {
-                true => "(This comment is marked as spam.)".to_string(),
-                _ => r_content,
-            },
+            display_name: if is_spam { "(spam user)".to_string() } else { r_display_name },
+            site_url: if is_spam { None } else { r_site_url },
+            content: if is_spam { "(This comment is marked as spam.)".to_string() } else { r_content },
+            is_spam: if is_spam { Some(true) } else { None },
             count_replies: Some(r_count_replies),
             created_time: r_created_time,
         }
@@ -155,12 +154,10 @@ impl From<Comment> for GetCommentResponse {
             id: r_id,
             page_id: r_page_id,
             reply_to: r_reply_to,
-            display_name: r_display_name,
-            site_url: r_site_url,
-            content: match is_spam {
-                true => "(This comment is marked as spam.)".to_string(),
-                _ => r_content,
-            },
+            display_name: if is_spam { "(spam user)".to_string() } else { r_display_name },
+            site_url: if is_spam { None } else { r_site_url },
+            content: if is_spam { "(This comment is marked as spam.)".to_string() } else { r_content },
+            is_spam: if is_spam { Some(true) } else { None },
             count_replies: None,
             created_time: r_created_time,
         }
