@@ -87,6 +87,17 @@ pub struct GetCommentResponse {
     created_time: DateTime<Utc>,
 }
 
+#[derive(Deserialize)]
+pub struct MarkCommentRequestPath {
+    page: uuid::Uuid,
+    comment: uuid::Uuid,
+}
+
+#[derive(Deserialize)]
+pub struct MarkCommentRequest {
+    spam: bool,
+}
+
 impl From<CommentWithReplies> for GetCommentResponse {
     fn from(comment: CommentWithReplies) -> Self {
         let CommentWithReplies {
@@ -418,7 +429,31 @@ pub async fn get_comment(
     }
 }
 
-pub async fn mark_comment(_: Identity) -> AppResult<impl Responder> {
+pub async fn mark_comment(
+    db: web::Data<Pool>,
+    path_param: web::Path<MarkCommentRequestPath>,
+    mark: web::Json<MarkCommentRequest>,
+    _: Identity,
+) -> AppResult<impl Responder> {
+    let conn = db.get()?;
+
+    let flags_old: i32 = comments
+        .select(flags)
+        .filter(page_id.eq(path_param.page))
+        .filter(id.eq(path_param.comment))
+        .first(&conn)?;
+
+    let flags_reset_mask = !(MARK_AS_SPAM_FRAG_BIT);
+    let flags_set_mask = if mark.spam {
+        MARK_AS_SPAM_FRAG_BIT
+    } else {
+        0
+    };
+
+    diesel::update(comments.find(path_param.comment))
+        .set(flags.eq(flags_old & flags_reset_mask | flags_set_mask))
+        .get_result::<Comment>(&conn)?;
+
     Ok(HttpResponse::NoContent())
 }
 
