@@ -96,6 +96,7 @@ function delete_page(id: string) {
                 <th>URL</th>
                 <th>state</th>
                 <th></th>
+                <th></th>
             </tr>
             <tr v-for="page in pages">
                 <td><a :href="`/pages/${page.id}`" target="_blank">{{ page.id }}</a></td>
@@ -109,6 +110,9 @@ function delete_page(id: string) {
                 </td>
                 <td v-else-if="page_modify == page.id">
                     <button @click="end_modify_page(page.id)">[Cancel Modify]</button>
+                </td>
+                <td>
+                    <a :href="`/admin/pages/${page.id}`" target="_blank">Comment Moderation</a>
                 </td>
             </tr>
         </tbody>

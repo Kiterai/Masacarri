@@ -39,7 +39,12 @@ function show_contexts(id: string) {
 function mark_comment(id: string, is_spam: boolean) {
   app_fetch_admin(`/api/pages/${props.page_id}/comments/${id}`, "PATCH", {
     spam: is_spam,
-  }).then();
+  }).then(() => {
+    alert("succeeded to mark comment")
+  })
+  .catch(() => {
+    alert("failed to mark comment")
+  });
 }
 
 store.loadPage(props.page_id);
