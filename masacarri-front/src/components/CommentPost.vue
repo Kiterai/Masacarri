@@ -68,7 +68,8 @@ function toReplyto() {
 
 <template>
     <div class="post"
-        :data-current-focus="store.comment_shows_reply == props.comment.comment_id || store.comment_shows_context == props.comment.comment_id">
+        :data-current-focus="store.comment_shows_reply == props.comment.comment_id || store.comment_shows_context == props.comment.comment_id"
+        :data-spam="props.comment.is_spam">
         <div class="post-meta">
             <a v-if="props.comment.parent" class="post-isreply" @click="toReplyto">返信:</a>
             <a class="post-name" :href="props.comment.site_url" target="_blank" rel="noopener noreferrer">{{ props.comment.name }}</a>
@@ -164,6 +165,10 @@ function toReplyto() {
 </style>
 
 <style>
+[data-spam="true"] .post-content {
+    color: #AAA;
+}
+
 .post-content ul,
 .post-content ol {
     margin-left: 1em;

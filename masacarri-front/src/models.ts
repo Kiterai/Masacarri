@@ -5,6 +5,7 @@ export type Comment = {
     display_name: string,
     site_url?: string,
     content: string,
+    is_spam?: boolean,
     count_replies: number,
     created_time: string,
 };
