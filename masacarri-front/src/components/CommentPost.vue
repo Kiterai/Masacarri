@@ -12,6 +12,7 @@ const { comment_replyto } = storeToRefs(store);
 const props = defineProps<{
     comment: ShowingComment,
     hide_buttons?: boolean,
+    is_admin?: boolean,
 }>();
 
 const emit = defineEmits<{
@@ -19,6 +20,7 @@ const emit = defineEmits<{
     (e: 'cancelReplyClicked', id: string): void,
     (e: 'showRepliesClicked', id: string): void,
     (e: 'showContextsClicked', id: string): void,
+    (e: 'markCommentClicked', id: string, is_spam: boolean): void,
 }>();
 
 const content = computed(() => {
@@ -64,6 +66,14 @@ function toReplyto() {
         store.loadCommentReply(props.comment.parent);
 }
 
+function markCommentAsSpamClicked() {
+    emit("markCommentClicked", props.comment.comment_id, true);
+}
+
+function unmarkCommentAsSpamClicked() {
+    emit("markCommentClicked", props.comment.comment_id, false);
+}
+
 </script>
 
 <template>
@@ -74,6 +84,10 @@ function toReplyto() {
             <a v-if="props.comment.parent" class="post-isreply" @click="toReplyto">返信:</a>
             <a class="post-name" :href="props.comment.site_url" target="_blank" rel="noopener noreferrer">{{ props.comment.name }}</a>
             <time class="post-date" :datetime="props.comment.date.toISOString()">{{ date_str }}</time>
+            <div v-if="props.is_admin">
+                <button v-if="props.comment.is_spam" @click="unmarkCommentAsSpamClicked">[unmark as spam]</button>
+                <button v-else @click="markCommentAsSpamClicked">[mark as spam]</button>
+            </div>
         </div>
         <div class="post-content" v-html="content"></div>
         <div class="btns" v-if="!props.hide_buttons">

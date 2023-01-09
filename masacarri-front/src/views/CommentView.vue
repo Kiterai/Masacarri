@@ -5,12 +5,13 @@ import { useCommentsStore } from '@/CommentsStore';
 import { storeToRefs } from 'pinia';
 import { computed } from "@vue/reactivity";
 import type { Comment } from "@/models";
-import { repository_url } from "@/utils";
+import { app_fetch_admin, repository_url } from "@/utils";
 
 const store = useCommentsStore();
 
 const props = defineProps<{
-  page_id: string
+  page_id: string,
+  is_admin?: boolean,
 }>();
 
 
@@ -33,6 +34,12 @@ function show_replies(id: string) {
 }
 function show_contexts(id: string) {
   store.loadCommentContext(id);
+}
+
+function mark_comment(id: string, is_spam: boolean) {
+  app_fetch_admin(`/api/pages/${props.page_id}/comments/${id}`, "PATCH", {
+    spam: is_spam,
+  }).then();
 }
 
 store.loadPage(props.page_id);
@@ -130,9 +137,10 @@ const { comment_showlist } = storeToRefs(store);
         :data-isactive="store.sub_pagination.index == index">{{  index  }}</button>
     </nav>
     <div class="post-list">
-      <CommentPost v-for="comment in comment_showlist" :key="comment.comment_id" :comment="comment"
+      <CommentPost v-for="comment in comment_showlist" :key="comment.comment_id" :comment="comment" :is_admin="props.is_admin"
         @begin-reply-clicked="on_begin_reply_clicked" @cancel-reply-clicked="on_cancel_reply_clicked"
-        @show-replies-clicked="show_replies" @show-contexts-clicked="show_contexts">
+        @show-replies-clicked="show_replies" @show-contexts-clicked="show_contexts"
+        @mark-comment-clicked="mark_comment">
       </CommentPost>
     </div>
     <nav v-if="store.sub_pagination" class="pagination_nav sub_pagination_nav">

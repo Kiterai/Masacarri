@@ -19,6 +19,17 @@ const router = createRouter({
       component: () => import('../views/CommentView.vue'),
       props: true,
     },
+    {
+      path: '/admin/pages/:page_id',
+      name: 'admin_commentpage',
+      component: () => import('../views/CommentView.vue'),
+      props: (route) => {
+        return {
+          page_id: route.params.page_id,
+          is_admin: true,
+        }
+      }
+    },
   ]
 })
 
