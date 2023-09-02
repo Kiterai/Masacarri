@@ -1,4 +1,4 @@
-FROM rust:1.63-slim as rustbuilder
+FROM rust:1.72-slim as rustbuilder
 WORKDIR /usr/src/masacarri
 COPY ./masacarri .
 
