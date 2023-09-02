@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia';
 import { computed } from "@vue/reactivity";
 import type { Comment } from "@/models";
 import { app_fetch_admin, repository_url } from "@/utils";
+import { ref } from "vue";
 
 const store = useCommentsStore();
 
@@ -14,6 +15,10 @@ const props = defineProps<{
   is_admin?: boolean,
 }>();
 
+const query_params = new URLSearchParams(location.search);
+const custom_style = ref({
+  color: query_params.has('color') ? '#' + query_params.get('color') : undefined
+});
 
 function on_comment_submit(data: Comment) {
   if (data.reply_to) {
@@ -131,7 +136,7 @@ const { comment_showlist } = storeToRefs(store);
 
 <template>
   <div v-if="store.page_loading">loading...</div>
-  <div class="comment-view" v-else>
+  <div class="comment-view" :style="custom_style" v-else>
     <CommentForm></CommentForm>
     <nav class="pagination_nav">
       <button v-for="index in linkCommentPageIndices" @click="store.loadComment(index)" class="comment_page_btn"

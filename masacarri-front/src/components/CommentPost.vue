@@ -170,7 +170,7 @@ function unmarkCommentAsSpamClicked() {
 }
 
 .btn-separator {
-    color: rgba(0, 0, 0, 0.25);
+    color: #888;
 }
 
 .post-list {
